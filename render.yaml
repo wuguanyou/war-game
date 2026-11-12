@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: pixel-frontier-rts
+    runtime: node
+    plan: free
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    numInstances: 1

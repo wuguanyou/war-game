@@ -1,0 +1,13 @@
+{
+  "name": "pixel-frontier-rts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "界域爭鋒 V5.1 像素即時領土戰原型",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
