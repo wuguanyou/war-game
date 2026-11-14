@@ -7,7 +7,8 @@ const crypto = require('node:crypto');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8080);
-const SIZE = 24, TILE = 28, TICK = 100;
+const SIZE = 32, TILE = 28, TICK = 100;
+const MID = SIZE / 2, BASE_X = [3, SIZE - 4];
 const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
 const WORK_RANGE = 1.1;
 const RESOURCES = ['food','wood','stone','gold'];
@@ -25,6 +26,8 @@ const BUILDING = {
   base: {name:'主基地',hp:1500,vision:7},
   barracks: {name:'兵營',hp:560,vision:2,cost:{wood:100,stone:35},time:12,buildOn:'land'},
   tower: {name:'防禦塔',hp:410,vision:7,cost:{wood:42,stone:58},time:11,buildOn:'land',range:5.8,damage:18,interval:1.1},
+  wall: {name:'城牆',hp:420,vision:1,cost:{stone:20},time:5,buildOn:'land'},
+  gate: {name:'城門',hp:320,vision:2,cost:{wood:25,stone:25},time:7,buildOn:'land'},
   farm: {name:'農場',hp:280,vision:2,cost:{wood:52},time:9,buildOn:'land',foodRate:0.19},
   gather: {name:'採集站',hp:330,vision:2,cost:{wood:45,stone:18},time:9,buildOn:'resource'}
 };
@@ -45,13 +48,13 @@ function inside(x,y){return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0
 function insideIsland(x,y){const dx=(x+.5-SIZE/2)/(SIZE/2),dy=(y+.5-SIZE/2)/(SIZE/2);return dx**4+dy**4<=1;}
 function unitCount(g,p){return g.units.filter(u=>u.owner===p).length;}
 function makeUnit(g,owner,type,x,y){const d=UNIT[type];return{id:`u${nextUnit++}`,owner,type,x:x+.5,y:y+.5,hp:d.hp,maxHp:d.hp,order:null,path:[],stance:'aggressive',cooldown:0,think:0,selectedBy:0};}
-function makeBuilding(owner,type,x,y,complete=true){const d=BUILDING[type];return{id:`b${nextBuilding++}`,owner,type,x,y,hp:complete?d.hp:Math.ceil(d.hp*.25),maxHp:d.hp,underConstruction:!complete,progress:0,queue:[],cooldown:0};}
+function makeBuilding(owner,type,x,y,complete=true){const d=BUILDING[type];return{id:`b${nextBuilding++}`,owner,type,x,y,hp:complete?d.hp:Math.ceil(d.hp*.25),maxHp:d.hp,underConstruction:!complete,progress:0,queue:[],cooldown:0,open:type==='gate'?false:undefined};}
 function startGame(seed, names=['指揮官 A','指揮官 B']){
   const rnd=rngFor(seed),tiles=Array(SIZE*SIZE);
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE/2;x++){
-    const safe=(x<=5&&Math.abs(y-12)<=3);
+    const safe=(x<=5&&Math.abs(y-MID)<=3);
     const onIsland=insideIsland(x,y);let terrain=onIsland?'grass':'water',resource=null,amount=0;
-    if(onIsland&&!safe&&y!==12){
+    if(onIsland&&!safe&&y!==MID){
       const r=rnd();
       if(r<.095)terrain='water';
       else if(r<.22){terrain='forest';resource='wood';}
@@ -64,14 +67,14 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
   }
   // Guaranteed, mirrored approaches to wood, stone and food near each start.
   const guaranteed=[{dx:3,dy:-2,t:'forest',r:'wood'},{dx:4,dy:2,t:'stone',r:'stone'},{dx:5,dy:-1,t:'berry',r:'food'},{dx:5,dy:2,t:'forest',r:'wood'}];
-  for(const q of guaranteed){const amount=RESOURCE_META[q.r].amount[0]+Math.floor(rnd()*(RESOURCE_META[q.r].amount[1]-RESOURCE_META[q.r].amount[0]+1));for(let p=0;p<2;p++){const bx=p===0?3:20,dir=p===0?1:-1,x=bx+dir*q.dx,y=12+q.dy;if(!inside(x,y))continue;const t=tiles[idx(x,y)];t.terrain=q.t;t.resource=q.r;t.amount=amount;}}
-  const players=[0,1].map((p)=>({name:names[p]||`玩家 ${p+1}`,resources:{food:170,wood:145,stone:90,gold:35},base:{x:p===0?3:20,y:12},connected:true}));
+  for(const q of guaranteed){const amount=RESOURCE_META[q.r].amount[0]+Math.floor(rnd()*(RESOURCE_META[q.r].amount[1]-RESOURCE_META[q.r].amount[0]+1));for(let p=0;p<2;p++){const bx=BASE_X[p],dir=p===0?1:-1,x=bx+dir*q.dx,y=MID+q.dy;const t=tiles[idx(x,y)];t.terrain=q.t;t.resource=q.r;t.amount=amount;}}
+  const players=[0,1].map((p)=>({name:names[p]||`玩家 ${p+1}`,resources:{food:170,wood:145,stone:90,gold:35},base:{x:BASE_X[p],y:MID},connected:true}));
   const units=[];
   for(let p=0;p<2;p++){
     const bx=players[p].base.x,dir=p===0?1:-1;
-    for(const [type,dx,dy] of [['villager',dir,0],['villager',dir,-1],['villager',dir,1],['villager',-dir,0],['sword',2*dir,0],['sword',2*dir,-1]])units.push(makeUnit(null,p,type,bx+dx,12+dy));
-    for(let y=10;y<=14;y++)for(let x=bx-2;x<=bx+2;x++)if(inside(x,y)){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}t.owner=p;}
-    tiles[idx(bx,12)].building=makeBuilding(p,'base',bx,12,true);
+    for(const [type,dx,dy] of [['villager',dir,0],['villager',dir,-1],['villager',dir,1],['villager',-dir,0],['sword',2*dir,0],['sword',2*dir,-1]])units.push(makeUnit(null,p,type,bx+dx,MID+dy));
+    for(let y=MID-2;y<=MID+2;y++)for(let x=bx-2;x<=bx+2;x++){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}t.owner=p;}
+    tiles[idx(bx,MID)].building=makeBuilding(p,'base',bx,MID,true);
   }
   return {seed,tiles,players,units,elapsed:0,tick:0,ended:false,winner:-1,memories:[Array(SIZE*SIZE).fill(null),Array(SIZE*SIZE).fill(null)],visible:[new Set(),new Set()],ai:false,aiThink:0,log:[],effects:[]};
 }
@@ -79,9 +82,10 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
 
 function tileAt(g,x,y){if(!inside(x,y))return null;return g.tiles[idx(Math.floor(x),Math.floor(y))];}
 function adjacentIndices(i){const {x,y}=xy(i);return DIRS.map(([dx,dy])=>[x+dx,y+dy]).filter(([a,b])=>inside(a,b)).map(([a,b])=>idx(a,b));}
+function blocksPassage(b){return !!b&&!(b.type==='gate'&&!b.underConstruction&&b.open);}
 function passable(g,i){
   const t=g.tiles[i];
-  return !!t&&t.terrain!=='water'&&!t.building&&!(t.resource&&t.amount>0);
+  return !!t&&t.terrain!=='water'&&!blocksPassage(t.building)&&!(t.resource&&t.amount>0);
 }
 function findPath(g,startX,startY,goalIndex,blocked=-1){
   if(goalIndex===blocked||!passable(g,goalIndex))return null;
@@ -94,7 +98,7 @@ function center(i){const p=xy(i);return{x:p.x+.5,y:p.y+.5};}
 function lineOfSight(g,a,b){
   let x0=Math.floor(a.x),y0=Math.floor(a.y),x1=Math.floor(b.x),y1=Math.floor(b.y);
   const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let err=dx-dy;
-  while(!(x0===x1&&y0===y1)){const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}if(x0===x1&&y0===y1)break;const t=tileAt(g,x0,y0);if(!t||t.building)return false;}
+  while(!(x0===x1&&y0===y1)){const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}if(x0===x1&&y0===y1)break;const t=tileAt(g,x0,y0);if(!t||blocksPassage(t.building))return false;}
   return true;
 }
 function visionFor(g,p){
@@ -104,7 +108,7 @@ function visionFor(g,p){
   for(const t of g.tiles)if(t.building&&t.building.owner===p)add(t.x+.5,t.y+.5,BUILDING[t.building.type].vision||1.5,true);
   g.visible[p]=v;return v;
 }
-function updateVision(g){for(let p=0;p<2;p++){const vis=visionFor(g,p);for(const i of vis){const t=g.tiles[i];g.memories[p][i]={x:t.x,y:t.y,terrain:t.terrain,resource:t.resource,amount:t.amount,owner:t.owner,hp:t.hp,maxHp:t.maxHp,building:t.building?{id:t.building.id,type:t.building.type,owner:t.building.owner,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime}:null,seenAt:g.elapsed};}}}
+function updateVision(g){for(let p=0;p<2;p++){const vis=visionFor(g,p);for(const i of vis){const t=g.tiles[i];g.memories[p][i]={x:t.x,y:t.y,terrain:t.terrain,resource:t.resource,amount:t.amount,owner:t.owner,hp:t.hp,maxHp:t.maxHp,building:t.building?{id:t.building.id,type:t.building.type,open:t.building.open,owner:t.building.owner,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime}:null,seenAt:g.elapsed};}}}
 function serialize(g,p){
   updateVision(g);const vis=g.visible[p],mem=g.memories[p];
   const tiles=mem.map((m,i)=>{if(!m){const x=i%SIZE,y=Math.floor(i/SIZE);return{x,y,unseen:true,terrain:insideIsland(x,y)?null:'water'};}const current=vis.has(i);return{...m,visible:current,remembered:!current};});
@@ -115,11 +119,11 @@ function serialize(g,p){
     order:u.owner===p&&u.order?{kind:u.order.kind,target:u.order.tile}:null
   }));
   const effects=g.effects.filter(e=>(e.owner===p||sees(e.x,e.y))&&(e.tx===undefined||sees(e.tx,e.ty)));
-  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
+  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,open:t.building.open,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
   const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
-  return{type:'state',room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -169,8 +173,17 @@ function applyCommand(g,p,msg){
     }
   } else if(msg.action==='stance'){
     const stance=['aggressive','hold','force'].includes(msg.stance)?msg.stance:'aggressive';for(const u of selected){u.stance=stance;if(stance!=='aggressive'){u.order=null;u.path=[];}}
+  } else if(msg.action==='gate'){
+    if(!inside(msg.x,msg.y)||typeof msg.open!=='boolean')return;
+    const gate=g.tiles[idx(msg.x,msg.y)].building;
+    if(gate?.type!=='gate'||gate.owner!==p||gate.underConstruction||gate.open===msg.open)return;
+    if(!msg.open&&g.units.some(u=>Math.floor(u.x)===msg.x&&Math.floor(u.y)===msg.y)){
+      sendTo(g,p,{type:'notice',text:'城門下有單位，請清空門口再關門。'});
+      return;
+    }
+    gate.open=msg.open;
   } else if(msg.action==='build'){
-    const type=msg.building;if(!inside(msg.x,msg.y)||!BUILDING[type]||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
+    const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type)||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
     if(t.building?.owner===p&&t.building.underConstruction&&t.building.type===type){
       let resumed=false;
       for(const u of selected)if(u.type==='villager'&&workOrder(g,u,i,'build'))resumed=true;
@@ -351,7 +364,7 @@ function aiPlay(room){
   if(base&&base.queue.length<2&&pl.resources.food>=UNIT.villager.cost.food+UNIT.sword.cost.food){
     applyCommand(g,p,{action:'train',unit:'villager',x:base.x,y:base.y});
   }
-  const frontier=g.tiles.filter(t=>t.owner!==p&&t.terrain!=='water'&&!t.building&&adjacentIndices(idx(t.x,t.y)).some(i=>g.tiles[i].owner===p)).sort((a,b)=>Math.abs(a.x-g.players[0].base.x)+Math.abs(a.y-12)-Math.abs(b.x-g.players[0].base.x)-Math.abs(b.y-12));
+  const frontier=g.tiles.filter(t=>t.owner!==p&&t.terrain!=='water'&&!t.building&&adjacentIndices(idx(t.x,t.y)).some(i=>g.tiles[i].owner===p)).sort((a,b)=>Math.abs(a.x-g.players[0].base.x)+Math.abs(a.y-MID)-Math.abs(b.x-g.players[0].base.x)-Math.abs(b.y-MID));
   if(frontier.length){const target=frontier[0];const idle=soldiers.filter(u=>!u.order);for(const u of idle.slice(0,Math.min(3,idle.length)))attackOrder(g,u,{kind:'land',tile:idx(target.x,target.y)});}
   const targetBase=g.tiles[enemyBase].building;if(targetBase&&soldiers.length>=8&&soldiers.every(u=>!u.order)){for(const u of soldiers)attackOrder(g,u,{kind:'building',id:targetBase.id,tile:enemyBase});}
 }
