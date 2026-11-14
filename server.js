@@ -89,10 +89,31 @@ function passable(g,i){
 }
 function findPath(g,startX,startY,goalIndex,blocked=-1){
   if(goalIndex===blocked||!passable(g,goalIndex))return null;
-  const sx=Math.floor(startX),sy=Math.floor(startY);if(!inside(sx,sy))return[];const start=idx(sx,sy);if(start===goalIndex)return[];
-  const prev=new Int32Array(SIZE*SIZE);prev.fill(-2);prev[start]=-1;const q=[start];let head=0;
-  while(head<q.length){const cur=q[head++];if(cur===goalIndex)break;for(const n of adjacentIndices(cur)){if(prev[n]!==-2||n===blocked||!passable(g,n))continue;prev[n]=cur;q.push(n);}}
-  if(prev[goalIndex]===-2)return null;const path=[];for(let n=goalIndex;n!==start;n=prev[n])path.unshift(n);return path;
+  return searchPath(g,startX,startY,i=>i===goalIndex,blocked);
+}
+function searchPath(g,startX,startY,isGoal,blocked=-1){
+  const sx=Math.floor(startX),sy=Math.floor(startY);
+  if(!inside(sx,sy))return null;
+  const start=idx(sx,sy),prev=new Int32Array(SIZE*SIZE),queue=new Int32Array(SIZE*SIZE);
+  prev.fill(-2);prev[start]=-1;queue[0]=start;
+  let tail=1;
+  for(let head=0;head<tail;head++){
+    const current=queue[head];
+    if(isGoal(current)){
+      const path=[];
+      for(let i=current;i!==start;i=prev[i])path.push(i);
+      return path.reverse();
+    }
+    const x=current%SIZE,y=Math.floor(current/SIZE);
+    for(const [dx,dy] of DIRS){
+      const nx=x+dx,ny=y+dy;
+      if(nx<0||nx>=SIZE||ny<0||ny>=SIZE)continue;
+      const next=idx(nx,ny);
+      if(prev[next]!==-2||next===blocked||!passable(g,next))continue;
+      prev[next]=current;queue[tail++]=next;
+    }
+  }
+  return null;
 }
 function center(i){const p=xy(i);return{x:p.x+.5,y:p.y+.5};}
 function lineOfSight(g,a,b){
@@ -108,10 +129,28 @@ function visionFor(g,p){
   for(const t of g.tiles)if(t.building&&t.building.owner===p)add(t.x+.5,t.y+.5,BUILDING[t.building.type].vision||1.5,true);
   g.visible[p]=v;return v;
 }
-function updateVision(g){for(let p=0;p<2;p++){const vis=visionFor(g,p);for(const i of vis){const t=g.tiles[i];g.memories[p][i]={x:t.x,y:t.y,terrain:t.terrain,resource:t.resource,amount:t.amount,owner:t.owner,hp:t.hp,maxHp:t.maxHp,building:t.building?{id:t.building.id,type:t.building.type,open:t.building.open,owner:t.building.owner,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime}:null,seenAt:g.elapsed};}}}
-function serialize(g,p){
-  updateVision(g);const vis=g.visible[p],mem=g.memories[p];
-  const tiles=mem.map((m,i)=>{if(!m){const x=i%SIZE,y=Math.floor(i/SIZE);return{x,y,unseen:true,terrain:insideIsland(x,y)?null:'water'};}const current=vis.has(i);return{...m,visible:current,remembered:!current};});
+function updateVision(g){for(let p=0;p<2;p++)visionFor(g,p);}
+const UNEXPLORED=Array.from({length:SIZE*SIZE},(_,i)=>{
+  const {x,y}=xy(i);
+  return {x,y,unseen:true,terrain:insideIsland(x,y)?null:'water'};
+});
+function serialize(g,p,previousTiles){
+  const vis=g.visible[p],mem=g.memories[p];
+  for(const i of vis){
+    const {x,y,terrain,resource,amount,owner,hp,maxHp,building:b}=g.tiles[i];
+    mem[i]={x,y,terrain,resource,amount,owner,hp,maxHp,building:b?{id:b.id,type:b.type,open:b.open,owner:b.owner,hp:b.hp,maxHp:b.maxHp,underConstruction:b.underConstruction,progress:b.progress,buildTime:b.buildTime}:null};
+  }
+  const tiles=[];
+  for(let i=0;i<UNEXPLORED.length;i++){
+    const memory=mem[i],visible=vis.has(i);
+    const tile=memory?{...memory,visible,remembered:!visible}:UNEXPLORED[i];
+    if(previousTiles){
+      const signature=memory?JSON.stringify(tile):'';
+      if(signature===previousTiles[i])continue;
+      previousTiles[i]=signature;
+    }
+    tiles.push(tile);
+  }
   const sees=(x,y)=>vis.has(idx(Math.floor(x),Math.floor(y)));
   const units=g.units.filter(u=>u.owner===p||sees(u.x,u.y)).map(u=>({
     id:u.id,owner:u.owner,type:u.type,x:u.x,y:u.y,hp:u.hp,maxHp:u.maxHp,stance:u.stance,moving:!!u.path?.length,
@@ -123,7 +162,8 @@ function serialize(g,p){
   const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
-  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  const mapUpdate=previousTiles?{tileChanges:tiles}:{tiles};
+  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -231,13 +271,17 @@ function findTarget(g,u){const o=u.order;if(!o)return null;if(o.targetKind==='un
 function pathToAttackRange(g,u,target,range){
   const ti=target.kind==='unit'?idx(Math.floor(target.x),Math.floor(target.y)):idx(target.tile.x,target.tile.y);
   if(u.order?.lastTargetCell===ti&&u.path?.length)return;
+  if(u.order.retryPathAt>g.elapsed&&u.order.lastTargetCell===ti)return;
   const tx=target.kind==='unit'?target.x:target.tile.x+.5,ty=target.kind==='unit'?target.y:target.tile.y+.5;
-  const candidates=[];const reach=Math.ceil(range+1);for(let y=Math.max(0,Math.floor(ty-reach));y<=Math.min(SIZE-1,Math.floor(ty+reach));y++)for(let x=Math.max(0,Math.floor(tx-reach));x<=Math.min(SIZE-1,Math.floor(tx+reach));x++){
-    const i=idx(x,y),c=center(i);if(Math.hypot(c.x-tx,c.y-ty)>range)continue;if(target.kind==='building'&&i===ti)continue;if(!passable(g,i))continue;if(!lineOfSight(g,c,{x:tx,y:ty}))continue;candidates.push(i);
-  }
-  let best=null,bestLen=Infinity;
-  for(const i of candidates){const p=findPath(g,u.x,u.y,i);if(p&&!p.length)p.push(i);if(p&&p.length<bestLen){best=p;bestLen=p.length;}}
-  if(best){u.path=best;u.order.lastTargetCell=ti;}else{u.path=[];}
+  const path=searchPath(g,u.x,u.y,i=>{
+    if(!passable(g,i)||(target.kind==='building'&&i===ti))return false;
+    const c=center(i);
+    return Math.hypot(c.x-tx,c.y-ty)<=range&&lineOfSight(g,c,{x:tx,y:ty});
+  });
+  u.order.lastTargetCell=ti;
+  u.order.retryPathAt=path?0:g.elapsed+.5;
+  u.path=path??[];
+  if(path&&!path.length)path.push(idx(Math.floor(u.x),Math.floor(u.y)));
 }
 function damageUnit(g,u,damage,facing){
   u.hp-=damage;
@@ -339,7 +383,7 @@ function tickBuildings(g,dt){
 function cleanupAndVictory(g){g.units=g.units.filter(u=>u.hp>0);const destroyed=[0,1].filter(p=>{const b=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;return!b||b.hp<=0;});if(destroyed.length){g.ended=true;g.winner=destroyed.length===2?-1:1-destroyed[0];addLog(g,g.winner<0?'雙方主基地同時摧毀，戰局平手。':`${g.players[g.winner].name}摧毀主基地，獲得勝利！`);}}
 function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt;g.tick++;
   g.effects=g.effects.filter(e=>g.elapsed-e.at<.8);
-  updateVision(g);moveUnits(g,dt);attackAndGather(g,dt);tickBuildings(g,dt);cleanupAndVictory(g);
+  moveUnits(g,dt);updateVision(g);attackAndGather(g,dt);tickBuildings(g,dt);cleanupAndVictory(g);
   if(room.ai){g.aiThink+=dt;if(g.aiThink>1.25){g.aiThink=0;aiPlay(room);}}
   if(g.ended||g.tick%2===0)broadcastState(room);
 }
@@ -371,7 +415,20 @@ function aiPlay(room){
 function canAIPay(pl,cost){return Object.entries(cost).every(([k,v])=>pl.resources[k]>=v);}
 
 function broadcast(room,payload){for(const ws of room.players)if(ws)wsSend(ws,payload);}
-function broadcastState(room){if(!room.game)return;for(let p=0;p<2;p++)if(room.players[p])wsSend(room.players[p],serialize(room.game,p));}
+function broadcastState(room){
+  const g=room.game;
+  if(!g)return;
+  updateVision(g);
+  for(let p=0;p<2;p++){
+    const ws=room.players[p];
+    if(!ws||ws.destroyed)continue;
+    // Skip stale snapshots on slow connections. A full snapshot is required only on a new socket.
+    if(ws.writableLength>128*1024&&!g.ended)continue;
+    const state=serialize(g,p,ws.lastTiles);
+    if(ws.tileDeltas&&!ws.lastTiles)ws.lastTiles=state.tiles.map(tile=>tile.unseen?'':JSON.stringify(tile));
+    wsSend(ws,state);
+  }
+}
 function broadcastLobby(room){
   const count=room.ai?2:room.players.filter(Boolean).length;
   const names=room.names.map((name,slot)=>room.players[slot]||(room.ai&&slot===1)?name:null);
@@ -398,6 +455,7 @@ function joinRoom(ws,msg){
     room.players[slot]=ws;room.names[slot]=safeName(msg.name);room.disconnectAt=null;if(room.game)room.game.players[slot].name=room.names[slot];
   }else return;
   ws.room=room;ws.slot=slot;
+  ws.tileDeltas=msg.tileDeltas===true;
   if(!room.tokens[slot])room.tokens[slot]=crypto.randomBytes(12).toString('hex');
   wsSend(ws,{type:'joined',room:room.id,slot,token:room.tokens[slot],ai:room.ai,name:room.names[slot]});
   broadcastLobby(room);
