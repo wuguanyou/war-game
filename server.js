@@ -195,7 +195,7 @@ function applyCommand(g,p,msg){
   const ids=Array.isArray(msg.units)?msg.units.filter(id=>typeof id==='string').slice(0,60):[];
   const selected=validOwnedUnits(g,p,ids),player=g.players[p];
   if(msg.action==='move'){
-    if(!inside(msg.x,msg.y))return;const i=idx(msg.x,msg.y);if(!g.visible[p].has(i))return;
+    if(!inside(msg.x,msg.y))return;
     let moved=0;for(const u of selected){const kind=u.stance==='aggressive'?'attackMove':'move';if(moveOrder(g,u,{x:msg.x,y:msg.y},kind))moved++;}if(selected.length&&!moved)sendTo(g,p,{type:'notice',text:'目的地被水域或建築阻擋，找不到通路。'});
   } else if(msg.action==='gather'){
     if(!inside(msg.x,msg.y)||!g.visible[p].has(idx(msg.x,msg.y)))return;const t=g.tiles[idx(msg.x,msg.y)];if(!t.resource||t.amount<=0)return;
@@ -211,6 +211,8 @@ function applyCommand(g,p,msg){
       if(!adjacent){sendTo(g,p,{type:'notice',text:'只能攻擊與我方領土相鄰的土地。'});return;}
       for(const u of selected)if(u.type!=='villager')attackOrder(g,u,{kind:'land',tile:i});
     }
+  } else if(msg.action==='stop'){
+    for(const u of selected){u.order=null;u.path=[];u.think=Math.max(u.think,.7);}
   } else if(msg.action==='stance'){
     const stance=['aggressive','hold','force'].includes(msg.stance)?msg.stance:'aggressive';for(const u of selected){u.stance=stance;if(stance!=='aggressive'){u.order=null;u.path=[];}}
   } else if(msg.action==='gate'){

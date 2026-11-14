@@ -68,6 +68,9 @@
     .base-status b{color:var(--paper);font-variant-numeric:tabular-nums}
     .map-tools{position:absolute;z-index:1;top:12px;right:14px;display:flex;gap:4px}
     .map-tools button{min-width:35px;padding:0;font-size:17px}
+    .canvas-wrap canvas[data-targeting]{cursor:crosshair}
+    .canvas-wrap canvas:not([data-targeting]){cursor:default}
+    .command-hint{position:absolute;z-index:1;top:78px;left:14px;max-width:calc(100% - 28px);padding:6px 9px;border:1px solid #719086;border-radius:5px;background:#14282e;color:#fff1d3;font-size:12px;pointer-events:none}
     .dock{position:absolute;z-index:2;inset:auto 14px 14px;display:flex;align-items:flex-end;gap:12px;pointer-events:none}
     .dock>*{pointer-events:auto}
     .side{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;max-width:min(740px,100%);max-height:34dvh;overflow:auto;padding:12px;background:#13242cf5;border:1px solid #638077;border-left:3px solid var(--mint);border-radius:7px;box-shadow:0 4px 0 #102636ac}
@@ -253,6 +256,7 @@
         <button id="zoomHome" aria-label="重置鏡頭" title="重置鏡頭">⌂</button>
         <button id="zoomIn" aria-label="放大地圖" title="放大地圖">+</button>
       </div>
+      <div class="command-hint" id="commandHint" role="status" hidden></div>
       <div class="dock">
         <aside class="side" id="commandDock" aria-label="指揮與情報" hidden>
           <div class="context">
@@ -266,7 +270,9 @@
               <button class="game-button" data-stance="aggressive">⚔ 主動攻擊</button>
               <button class="game-button" data-stance="hold">⬟ 堅守位置</button>
               <button class="game-button" data-stance="force">➜ 強制移動</button>
-              <button class="game-button" id="attackMode">◎ 指定攻擊</button>
+              <button class="game-button" id="orderMode" type="button">➜ 下達指令</button>
+              <button class="game-button" id="attackMode" type="button" title="快捷鍵 X">◎ 指定攻擊</button>
+              <button class="game-button" id="stopUnits" type="button" title="快捷鍵 Z">■ 停止</button>
             </div>
             <div class="unit-list" id="unitList"></div>
           </div>
@@ -324,7 +330,7 @@
     </div>
   </main>
 
-  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選取，Shift 加選，拖曳框選；雙擊可選取附近同類單位。</li><li>右鍵移動；村民對資源右鍵採集。選村民後按建築，再點我方空地施工。</li><li>選取主基地或兵營後，點選生產項目加入佇列。</li><li>「指定攻擊」後右鍵敵軍、敵方建築或相鄰敵方土地；摧毀主基地獲勝。</li><li>滾輪縮放；中鍵或 WASD／方向鍵移動鏡頭；點擊縮圖可跳轉戰區。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵點選單位或建築，拖曳框選部隊。按住 Shift 可加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>選村民後選建築，再點己方空地。點選完工的兵營可生產部隊，點自家城門可開關。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-card"><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
   <div class="toast" id="toast" role="status"></div>
 
@@ -567,12 +573,21 @@
     stanceButtons.forEach(button=>button.onclick=()=>{
       if(selected.size)command('stance',{stance:button.dataset.stance});
     });
-    $('attackMode').onclick=()=>{
-      attackMode=!attackMode;
+    let orderMode=false;
+    function setTargetMode(mode){
+      attackMode=mode==='attack'&&!attackMode;
+      orderMode=mode==='order'&&!orderMode;
       pendingBuild=null;
-      showToast(attackMode?'攻擊模式：右鍵敵軍、建築或相鄰敵方土地。':'已返回一般移動模式。');
       renderUI();
-    };
+    }
+    function cancelTargetMode(){
+      if(!pendingBuild&&!attackMode&&!orderMode)return false;
+      pendingBuild=null;attackMode=false;orderMode=false;renderUI();return true;
+    }
+    $('attackMode').onclick=()=>setTargetMode('attack');
+    $('orderMode').onclick=()=>setTargetMode('order');
+    function stopUnits(){if(selected.size){cancelTargetMode();command('stop');}}
+    $('stopUnits').onclick=stopUnits;
     $('zoomIn').onclick=()=>zoomAt(1.18);$('zoomOut').onclick=()=>zoomAt(1/1.18);$('zoomHome').onclick=()=>{camera.x=SIZE/2;camera.y=SIZE/2;fitZoom();draw()};
     function resize(){const r=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);viewW=r.width;viewH=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);if(!camera.ready){fitZoom();camera.ready=true}resizeMinimap();draw()}
     let miniDpr=1;function resizeMinimap(){const r=miniCanvas.getBoundingClientRect();miniDpr=Math.min(window.devicePixelRatio||1,2);miniCanvas.width=Math.max(1,Math.round(r.width*miniDpr));miniCanvas.height=Math.max(1,Math.round(r.height*miniDpr));overviewCache.width=miniCanvas.width;overviewCache.height=miniCanvas.height;mapOverviewDirty=true}
@@ -683,39 +698,93 @@
     }
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top)},{passive:false});
-    canvas.addEventListener('pointerdown',e=>{if(e.button===1||e.button===2||keys.has(' ')){drag={id:e.pointerId,x:e.clientX,y:e.clientY,cameraX:camera.x,cameraY:camera.y,moved:false};canvas.setPointerCapture(e.pointerId);e.preventDefault()}else if(e.button===0){drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,select:true};canvas.setPointerCapture(e.pointerId)}});
-    canvas.addEventListener('pointermove',e=>{if(drag&&drag.id===e.pointerId){drag.currentX=e.clientX;drag.currentY=e.clientY;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(!drag.select&&drag.moved){camera.x=drag.cameraX-dx/(camera.zoom*TILE);camera.y=drag.cameraY-dy/(camera.zoom*TILE);clampCamera();needsDraw=true}}});
-    canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const old=drag;drag=null;if(old.moved){if(old.select){const a=screenToTile({clientX:old.x,clientY:old.y}),b=screenToTile(e);const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);const picks=state?.units.filter(u=>u.owner===slot&&u.x>=minX&&u.x<maxX+1&&u.y>=minY&&u.y<maxY+1&&tileState(Math.floor(u.x),Math.floor(u.y))?.visible).map(u=>u.id)||[];if(picks.length){selected=new Set(picks);selectedTile=null;renderUI()} }return}if(e.button===0||e.button===2&&pendingBuild)mapClick(e);else if(e.button===2)issueMapOrder(screenToTile(e));});
-    canvas.addEventListener('pointercancel',()=>{drag=null});
-    function mapClick(e){if(!state||state.ended)return;const t=screenToTile(e),tile=targetTile(t);if(!tile||tile.unseen)return;
+    canvas.addEventListener('pointerdown',e=>{
+      if(drag||!state||state.ended||![0,1,2].includes(e.button))return;
+      const pan=e.button===1||(e.button===0&&(e.pointerType==='touch'||keys.has(' ')));
+      drag={id:e.pointerId,button:e.button,x:e.clientX,y:e.clientY,cameraX:camera.x,cameraY:camera.y,pan,select:e.button===0&&!pan&&!pendingBuild&&!attackMode&&!orderMode,moved:false};
+      canvas.setPointerCapture(e.pointerId);
+      if(e.button!==0)e.preventDefault();
+    });
+    canvas.addEventListener('pointermove',e=>{
+      if(drag?.id!==e.pointerId)return;
+      drag.currentX=e.clientX;drag.currentY=e.clientY;
+      const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+      if(Math.hypot(dx,dy)>6)drag.moved=true;
+      if(drag.pan&&drag.moved){
+        camera.x=drag.cameraX-dx/(camera.zoom*TILE);
+        camera.y=drag.cameraY-dy/(camera.zoom*TILE);
+        clampCamera();
+      }
+      needsDraw=true;
+    });
+    function boxSelect(start,e){
+      const a=screenToTile({clientX:start.x,clientY:start.y}),b=screenToTile(e),now=performance.now();
+      const left=Math.min(a.wx,b.wx),right=Math.max(a.wx,b.wx),top=Math.min(a.wy,b.wy),bottom=Math.max(a.wy,b.wy);
+      const picks=state.units.filter(u=>{
+        if(u.owner!==slot)return false;
+        const p=visualPosition(u,now),x=p.x+p.offsetX/TILE,y=p.y+p.offsetY/TILE-.27;
+        return x>=left&&x<=right&&y>=top&&y<=bottom;
+      });
+      if(!picks.length)return;
+      selected=new Set([...(e.shiftKey?selected:[]),...picks.map(u=>u.id)]);
+      selectedTile=null;renderUI();
+    }
+    canvas.addEventListener('pointerup',e=>{
+      if(drag?.id!==e.pointerId)return;
+      const old=drag;drag=null;needsDraw=true;
+      if(old.moved){
+        if(old.select)boxSelect(old,e);
+        return;
+      }
+      if(old.button===2){
+        if(pendingBuild||attackMode||orderMode)cancelTargetMode();
+        else issueMapOrder(screenToTile(e));
+      }else if(old.button===0&&(!old.pan||e.pointerType==='touch'))mapClick(e);
+    });
+    function cancelDrag(){drag=null;needsDraw=true}
+    canvas.addEventListener('pointercancel',cancelDrag);
+    canvas.addEventListener('lostpointercapture',cancelDrag);
+    function mapClick(e){if(!state||state.ended)return;const t=screenToTile(e),tile=targetTile(t);
       if(pendingBuild){
-        const site=tile.building?.underConstruction&&tile.building.type===pendingBuild?tile:tileState(t.x,t.y);
+        const site=tile?.building?.underConstruction&&tile.building.type===pendingBuild?tile:tileState(t.x,t.y);
         if(!site?.visible)return showToast('只能在目前視野內放置建築。');
         command('build',{building:pendingBuild,x:site.x,y:site.y});
         pendingBuild=null;renderUI();return;
       }
-      if(attackMode&&selected.size){issueMapOrder(t);return;}
+      if((attackMode||orderMode)&&selected.size){issueMapOrder(t);return;}
       const unit=pointUnit(t);
-      if(tile.building&&!(unit?.owner===slot&&tile.building.type==='gate'&&tile.building.open&&Math.floor(unit.x)===tile.x&&Math.floor(unit.y)===tile.y)){
+      if(!unit&&(!tile||tile.unseen)){
+        if(!e.shiftKey){selected.clear();selectedTile=null;renderUI();}
+        return;
+      }
+      if(tile?.building&&!(unit?.owner===slot&&Math.floor(unit.x)===t.x&&Math.floor(unit.y)===t.y)){
         selectedTile={x:tile.x,y:tile.y};selected.clear();renderUI();return;
       }
       if(unit&&unit.owner===slot){if(e.shiftKey)selected.has(unit.id)?selected.delete(unit.id):selected.add(unit.id);else selected=new Set([unit.id]);selectedTile=null;renderUI();return;}
-      if(unit&&unit.owner!==slot){selectedTile={x:t.x,y:t.y,enemyUnit:unit.id};selected.clear();renderUI();return;}
+      if(unit&&unit.owner!==slot){selectedTile={x:Math.floor(unit.x),y:Math.floor(unit.y),enemyUnit:unit.id};selected.clear();renderUI();return;}
       selectedTile={x:t.x,y:t.y};selected.clear();renderUI();
     }
     canvas.addEventListener('dblclick',e=>{if(!state)return;const t=screenToTile(e),u=pointUnit(t);if(!u||u.owner!==slot)return;const same=state.units.filter(x=>x.owner===slot&&x.type===u.type&&tileState(Math.floor(x.x),Math.floor(x.y))?.visible);selected=new Set(same.map(x=>x.id));renderUI()});
     function issueMapOrder(point){
       if(!state||state.ended)return;
-      const tile=targetTile(point);
-      if(!tile?.visible)return showToast('請先派部隊偵察目標。');
-      const {x,y}=tile,chosen=ownSelected();
+      const chosen=ownSelected();
       if(!chosen.length)return showToast('先選取我方單位。');
-      const enemy=state.units.some(u=>u.owner!==slot&&Math.floor(u.x)===x&&Math.floor(u.y)===y);
-      if(attackMode||enemy||(tile.building&&tile.building.owner!==slot)){
-        command('attack',{x,y});attackMode=false;renderUI();return;
+      const ground=tileState(point.x,point.y),tile=targetTile(point),unit=pointUnit(point);
+      const soldier=chosen.some(u=>u.type!=='villager'),villagers=chosen.filter(u=>u.type==='villager');
+      const enemyBuilding=tile?.visible&&tile.building&&tile.building.owner!==slot;
+      const enemy=unit&&unit.owner!==slot?tileState(Math.floor(unit.x),Math.floor(unit.y)):null;
+      const attackTarget=enemyBuilding?tile:enemy?.visible?enemy:ground;
+      if(attackMode||enemyBuilding||enemy?.visible){
+        if(!soldier)return showToast('請先選取戰鬥單位。');
+        if(!attackTarget?.visible)return showToast('請先派部隊偵察攻擊目標。');
+        command('attack',{x:attackTarget.x,y:attackTarget.y,units:chosen.filter(u=>u.type!=='villager').map(u=>u.id)});
+      }else if(villagers.length&&tile?.visible&&tile.resource&&tile.amount>0){
+        command('gather',{x:tile.x,y:tile.y,units:villagers.map(u=>u.id)});
+      }else{
+        if(!ground||ground.terrain==='water')return showToast('請選擇陸地作為目的地。');
+        command('move',{x:ground.x,y:ground.y});
       }
-      if(chosen.every(u=>u.type==='villager')&&tile.resource&&tile.amount>0){command('gather',{x,y});return;}
-      command('move',{x,y});
+      cancelTargetMode();
     }
     window.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&!guide.classList.contains('hidden')){closeGuide();return;}
@@ -725,7 +794,11 @@
           const panel=gameMenu.open?gameMenu:battleLog;
           panel.open=false;panel.querySelector('summary').focus();return;
         }
-        pendingBuild=null;attackMode=false;selected.clear();selectedTile=null;renderUI();
+        if(cancelTargetMode())return;
+        selected.clear();selectedTile=null;renderUI();
+      }else if(!event.repeat&&selected.size&&(event.key.toLowerCase()==='x'||event.key.toLowerCase()==='z')){
+        if(event.key.toLowerCase()==='x')setTargetMode('attack');
+        else stopUnits();
       }else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key)){
         if(event.target.closest('button,summary,.res-card'))return;
         keys.add(event.key.toLowerCase());
@@ -757,7 +830,7 @@
       const units=ownSelected(),hasUnits=units.length>0;
       const hasVillager=units.some(u=>u.type==='villager');
       if(!hasVillager)pendingBuild=null;
-      if(!hasUnits)attackMode=false;
+      if(!hasUnits){attackMode=false;orderMode=false;}
       const tile=selectedTile?tileState(selectedTile.x,selectedTile.y):null;
       const building=tile&&(state.buildings?.find(b=>b.x===tile.x&&b.y===tile.y)||tile.building);
       const gateToggle=$('gateToggle');
@@ -775,6 +848,14 @@
       }
       $('attackMode').setAttribute('aria-pressed',attackMode);
       $('attackMode').classList.toggle('active',attackMode);
+      $('orderMode').setAttribute('aria-pressed',orderMode);
+      $('orderMode').classList.toggle('active',orderMode);
+      const targeting=pendingBuild?`點地圖放置${B[pendingBuild].name}`:attackMode?'點地圖指定攻擊目標':orderMode?'點地圖移動、採集或攻擊':'';
+      const hint=$('commandHint');
+      hint.hidden=!targeting;
+      setText('commandHint',targeting);
+      if(targeting)canvas.setAttribute('data-targeting','');
+      else canvas.removeAttribute('data-targeting');
       for(const button of $('buildButtons').children){
         const active=button.dataset.building===pendingBuild;
         button.classList.toggle('active',active);
@@ -787,7 +868,7 @@
         const active=units[0].order?.kind;
         const summary=active==='gather'?'採集':active==='attack'?'交戰':active==='build'?'施工':units.some(u=>u.moving)?'移動中':'待命';
         $('contextName').textContent=units.length===1?U[units[0].type].name:`部隊 ×${units.length}`;
-        $('contextSub').textContent=pendingBuild?'選取施工位置':attackMode?'右鍵指定攻擊目標':summary;
+        $('contextSub').textContent=summary;
         $('contextBody').innerHTML=`<div class="stat"><label>生命值</label><strong>${Math.ceil(hp)} / ${maxHp}</strong><div class="bar"><i style="width:${hp/maxHp*100}%"></i></div></div>`;
       }else if(tile&&!tile.unseen){
         const owner=tile.owner<0?'中立':tile.owner===slot?'我方':'敵方';
@@ -841,7 +922,7 @@
         button.innerHTML=`${buildingIcon(type)}${B[type].name}<em>${cost} · ${time}秒</em>`;
         button.onclick=()=>{
           pendingBuild=pendingBuild===type?null:type;
-          attackMode=false;
+          attackMode=false;orderMode=false;
           $('attackMode').classList.remove('active');
           if(pendingBuild)showToast(`選取施工位置：${B[type].name}`);
           renderUI();
