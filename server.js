@@ -13,11 +13,14 @@ const WORK_RANGE = 1.1;
 const RESOURCES = ['food','wood','stone','gold'];
 const UNIT = {
   villager: {name:'村民',hp:70,speed:2.35,vision:4,range:0.8,damage:4,interval:1.1,cost:{food:45},time:13,canGather:true},
-  sword: {name:'劍士',hp:145,speed:2.8,vision:4,range:1.25,damage:23,interval:.9,cost:{food:55,wood:15},time:12},
-  archer: {name:'弓箭手',hp:88,speed:2.65,vision:6,range:5.2,damage:17,interval:1.15,cost:{food:45,wood:28},time:14},
-  pike: {name:'長槍兵',hp:128,speed:2.55,vision:4,range:1.35,damage:20,interval:1,cost:{food:55,wood:20},time:13},
-  siege: {name:'攻城車',hp:230,speed:1.25,vision:3.5,range:3.1,damage:74,interval:2.3,cost:{wood:70,stone:55,gold:20},time:27,siege:true}
+  sword: {name:'劍士',hp:145,speed:2.8,vision:4,range:1.25,damage:23,buildingDamage:18,interval:.9,cost:{food:55,wood:15},time:12},
+  archer: {name:'弓箭手',hp:88,speed:2.65,vision:6,range:5.2,damage:17,buildingDamage:6,interval:1.15,cost:{food:45,wood:28},time:14},
+  pike: {name:'長槍兵',hp:128,speed:2.55,vision:4,range:1.35,damage:20,buildingDamage:10,interval:1,cost:{food:55,wood:20},time:13},
+  siege: {name:'攻城車',hp:230,speed:1.25,vision:3.5,range:3.1,damage:74,buildingDamage:90,interval:2.3,cost:{wood:70,stone:55,gold:20},time:27,siege:true}
 };
+const BUILDING_DPS=Object.fromEntries(Object.entries(UNIT).filter(([,unit])=>unit.buildingDamage).map(([type,unit])=>[
+  type,Math.round(unit.buildingDamage/unit.interval*10)/10
+]));
 const BUILDING = {
   base: {name:'主基地',hp:1500,vision:7},
   barracks: {name:'兵營',hp:560,vision:2,cost:{wood:100,stone:35},time:12,buildOn:'land'},
@@ -116,7 +119,7 @@ function serialize(g,p){
   const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
-  return{type:'state',room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  return{type:'state',room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -274,7 +277,8 @@ function attackAndGather(g,dt){
       let damage=d.damage;if(u.type==='pike'&&target.type==='siege')damage*=1.9;if(u.type==='sword'&&target.type==='archer')damage*=1.25;if(target.type==='siege'&&u.type!=='siege')damage*=1.2;
       damageUnit(g,target,damage,facing&&-facing);
     } else if(target.kind==='building'){
-      let damage=d.siege?d.damage:d.damage*.5;if(target.building.type==='tower'&&u.type==='siege')damage*=1.35;target.building.hp-=damage;
+      const bonus=target.building.type==='tower'&&d.siege?1.35:1;
+      target.building.hp-=d.buildingDamage*bonus;
       if(target.building.hp<=0){const ix=target.tile.y*SIZE+target.tile.x,isBase=target.building.type==='base';target.tile.building=null;for(const a of g.units)if(a.order?.targetId===target.building.id){if(!isBase&&adjacentIndices(ix).some(i=>g.tiles[i].owner===a.owner))a.order={kind:'attack',targetKind:'land',tile:ix,lastTargetCell:-1};else a.order=null;a.path=[];}addLog(g,`${g.players[u.owner].name}摧毀${BUILDING[target.building.type].name}。`,u.owner,ix);}
     } else if(target.kind==='land'){
       const tile=target.tile;tile.hp-=d.siege?d.damage:d.damage*.72;

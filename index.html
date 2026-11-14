@@ -777,7 +777,9 @@
         holder.replaceChildren(...(canTrain||[]).map(([type,cost])=>{
           const button=document.createElement('button');
           button.className='game-button';
-          button.innerHTML=`${unitIcon(type)}${U[type].name}<em>${cost}</em>`;
+          const dps=state.buildingDps?.[type];
+          const stats=dps===undefined?'':`<em>拆建築 ${dps}／秒</em>`;
+          button.innerHTML=`${unitIcon(type)}${U[type].name}<em>${cost}</em>${stats}`;
           button.onclick=()=>send('command',{command:{action:'train',unit:type,x:tile.x,y:tile.y}});
           return button;
         }));
