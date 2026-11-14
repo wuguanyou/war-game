@@ -226,16 +226,21 @@ function applyCommand(g,p,msg){
     gate.open=msg.open;
   } else if(msg.action==='build'){
     const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type)||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
-    if(t.building?.owner===p&&t.building.underConstruction&&t.building.type===type){
-      let resumed=false;
-      for(const u of selected)if(u.type==='villager'&&workOrder(g,u,i,'build'))resumed=true;
-      if(!resumed)sendTo(g,p,{type:'notice',text:'沒有村民可抵達工地旁。'});
-      return;
+    const resuming=t.building?.owner===p&&t.building.underConstruction&&t.building.type===type;
+    if(!resuming){
+      if(t.owner!==p||!canBuild(type,t)){sendTo(g,p,{type:'notice',text:'建築需放在我方空地；採集站必須蓋在木、石或金資源格。'});return;}
+      if(g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){sendTo(g,p,{type:'notice',text:'請先讓單位離開施工格。'});return;}
     }
-    if(t.owner!==p||!canBuild(type,t)){sendTo(g,p,{type:'notice',text:'建築需放在我方空地；採集站必須蓋在木、石或金資源格。'});return;}
-    if(g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){sendTo(g,p,{type:'notice',text:'請先讓單位離開施工格。'});return;}
-    const builders=selected.filter(u=>u.type==='villager').map(u=>({u,path:workPath(g,u,i)})).filter(b=>b.path);
-    if(!builders.length){sendTo(g,p,{type:'notice',text:'先選取能到工地旁空地的村民。'});return;}
+    const auto=msg.auto===true;
+    if(auto&&resuming&&g.units.some(u=>u.owner===p&&u.order?.buildingId===t.building.id))return;
+    const available=auto?g.units.filter(u=>u.owner===p&&(!u.order||u.order.kind==='gather')):selected;
+    const builders=available.filter(u=>u.type==='villager').map(u=>({u,path:workPath(g,u,i)})).filter(b=>b.path);
+    if(!builders.length){sendTo(g,p,{type:'notice',text:auto?'沒有可到場的待命或採集村民。':'先選取能到工地旁空地的村民。'});return;}
+    if(auto){
+      builders.sort((a,b)=>Number(!!a.u.order)-Number(!!b.u.order)||a.path.length-b.path.length);
+      builders.length=1;
+    }
+    if(resuming){for(const {u,path} of builders)workOrder(g,u,i,'build',path);return;}
     const d=BUILDING[type];if(!pay(player,d.cost)){sendTo(g,p,{type:'notice',text:'資源不足，無法建造。'});return;}
     t.building=makeBuilding(p,type,t.x,t.y,false);t.building.buildTime=d.time;
     for(const {u,path} of builders)workOrder(g,u,i,'build',path);

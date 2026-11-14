@@ -71,6 +71,9 @@
     .canvas-wrap canvas[data-targeting]{cursor:crosshair}
     .canvas-wrap canvas:not([data-targeting]){cursor:default}
     .command-hint{position:absolute;z-index:1;top:78px;left:14px;max-width:calc(100% - 28px);padding:6px 9px;border:1px solid #719086;border-radius:5px;background:#14282e;color:#fff1d3;font-size:12px;pointer-events:none}
+    .building-tip{position:absolute;z-index:2;max-width:min(230px,calc(100% - 16px));padding:8px 11px;border:1px solid #719086;border-radius:5px;background:#14282ef5;color:#fff1d3;box-shadow:0 3px 12px #07131770;font-size:12px;pointer-events:none}
+    .building-tip strong{display:block;margin-bottom:3px;color:#edca85;font-size:13px}
+    .building-tip span{display:block;white-space:pre-line;line-height:1.5}
     .dock{position:absolute;z-index:2;inset:auto 14px 14px;display:flex;align-items:flex-end;gap:12px;pointer-events:none}
     .dock>*{pointer-events:auto}
     .side{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;max-width:min(740px,100%);max-height:34dvh;overflow:auto;padding:12px;background:#13242cf5;border:1px solid #638077;border-left:3px solid var(--mint);border-radius:7px;box-shadow:0 4px 0 #102636ac}
@@ -257,6 +260,7 @@
         <button id="zoomIn" aria-label="放大地圖" title="放大地圖">+</button>
       </div>
       <div class="command-hint" id="commandHint" role="status" hidden></div>
+      <div class="building-tip" id="buildingTip" aria-hidden="true" hidden><strong id="buildingTipTitle"></strong><span id="buildingTipDetails"></span></div>
       <div class="dock">
         <aside class="side" id="commandDock" aria-label="指揮與情報" hidden>
           <div class="context">
@@ -276,7 +280,7 @@
             </div>
             <div class="unit-list" id="unitList"></div>
           </div>
-          <div class="section" id="buildActions" hidden><div class="section-title">建造</div><div class="button-grid" id="buildButtons"></div></div>
+          <div class="section" id="buildActions" hidden><div class="section-title" id="buildTitle">建造</div><div class="button-grid" id="buildButtons"></div><div class="note" id="buildNote"></div></div>
           <div class="section" id="trainActions" hidden><div class="section-title">生產部隊</div><div class="button-grid" id="trainButtons"></div><div class="note" id="queueInfo"></div></div>
         </aside>
         <div class="dock-tools">
@@ -547,6 +551,7 @@
     }
     function openGuide(){
       gameMenu.open=false;
+      clearBuildingTip();
       $('lobbyPage').inert=true;
       $('game').inert=true;
       keys.clear();
@@ -696,6 +701,37 @@
       }
       return ground;
     }
+    let hoverPoint=null;
+    function updateBuildingTip(){
+      const tip=$('buildingTip');
+      const point=hoverPoint&&!drag&&!$('game').inert?screenToTile(hoverPoint):null;
+      const tile=point&&point.sx>=0&&point.sy>=0&&point.sx<viewW&&point.sy<viewH?targetTile(point):null;
+      const building=tile?.building;
+      if(!building||(!tile.visible&&!tile.remembered)){tip.hidden=true;return;}
+      const own=building.owner===slot;
+      const details=[own?'我方':'敵方',`耐久 ${Math.ceil(building.hp)} / ${building.maxHp}`];
+      if(building.underConstruction)details.push(`施工 ${Math.floor(building.progress/building.buildTime*100)}%`);
+      else if(building.type==='gate')details.push(building.open?'城門已開啟':'城門已關閉');
+      if(own&&tile.visible){
+        const next=state.buildings?.find(b=>b.id===building.id)?.queue?.[0];
+        if(next)details.push(next.remaining>0?`生產中：${U[next.unit].name} · ${Math.ceil(next.remaining)} 秒`:'已完成，等待出口淨空');
+      }
+      if(tile.remembered)details.push('最後已知情報');
+      setText('buildingTipTitle',B[building.type]?.name??'建築');
+      setText('buildingTipDetails',details.join('\n'));
+      const opening=tip.hidden;
+      tip.hidden=false;
+      if(opening||tip.dataset.content!==details.join('|')){
+        tip.dataset.content=details.join('|');
+        tip.dataset.width=tip.offsetWidth;
+        tip.dataset.height=tip.offsetHeight;
+      }
+      const width=Number(tip.dataset.width)||0,height=Number(tip.dataset.height)||0;
+      tip.style.left=`${Math.max(8,Math.min(point.sx+15,viewW-width-8))}px`;
+      tip.style.top=`${Math.max(8,Math.min(point.sy+15,viewH-height-8))}px`;
+    }
+    function clearBuildingTip(){hoverPoint=null;$('buildingTip').hidden=true;}
+    canvas.addEventListener('pointerleave',clearBuildingTip);
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top)},{passive:false});
     canvas.addEventListener('pointerdown',e=>{
@@ -703,9 +739,11 @@
       const pan=e.button===1||(e.button===0&&(e.pointerType==='touch'||keys.has(' ')));
       drag={id:e.pointerId,button:e.button,x:e.clientX,y:e.clientY,cameraX:camera.x,cameraY:camera.y,pan,select:e.button===0&&!pan&&!pendingBuild&&!attackMode&&!orderMode,moved:false};
       canvas.setPointerCapture(e.pointerId);
+      clearBuildingTip();
       if(e.button!==0)e.preventDefault();
     });
     canvas.addEventListener('pointermove',e=>{
+      if(!drag&&e.pointerType==='mouse'){hoverPoint={clientX:e.clientX,clientY:e.clientY};updateBuildingTip();}
       if(drag?.id!==e.pointerId)return;
       drag.currentX=e.clientX;drag.currentY=e.clientY;
       const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
@@ -817,6 +855,13 @@
       return `<span class="building-icon" aria-hidden="true" style="--sprite-x:${(sprite%3)*50}%;--sprite-y:${Math.floor(sprite/3)*100}%"></span>`;
     }
     function setText(id,value){const node=$(id),label=String(value);if(node.textContent!==label)node.textContent=label;}
+    function canBuildFromTile(tile){
+      return tile?.visible&&tile.owner===slot&&tile.terrain!=='water'&&
+        (tile.building?tile.building.owner===slot&&tile.building.underConstruction:tile.resource!=='food');
+    }
+    function buildMatchesTile(type,tile){
+      return tile.building?tile.building.type===type:(type==='gather'?!!tile.resource:!tile.resource);
+    }
     function renderUI(){
       if(!state)return;
       for(const resource of Object.keys(RES))setText(resource,Math.floor(state.resources[resource]));
@@ -838,7 +883,11 @@
       if(!gateToggle.hidden)gateToggle.textContent=building.open?'關城門':'開城門';
       $('commandDock').hidden=!hasUnits&&(!tile||tile.unseen);
       $('unitActions').hidden=!hasUnits;
-      $('buildActions').hidden=!hasVillager;
+      const directBuild=!hasUnits&&canBuildFromTile(tile);
+      const staffed=directBuild&&building?.underConstruction&&state.units.some(u=>u.owner===slot&&u.order?.kind==='build'&&u.order.target===tile.y*SIZE+tile.x);
+      $('buildActions').hidden=(!hasVillager&&!directBuild)||state.ended;
+      setText('buildTitle',directBuild&&building?'施工':'建造');
+      setText('buildNote',directBuild?(staffed?'村民正在前往或施工':'自動派遣可到場的村民'):'');
       $('contextIcon').classList.toggle('unit-icon',hasUnits);
       if(hasUnits)$('contextIcon').style.setProperty('--unit-row',`${UNIT_ROWS[units[0].type]*25}%`);
       for(const button of stanceButtons){
@@ -857,7 +906,13 @@
       if(targeting)canvas.setAttribute('data-targeting','');
       else canvas.removeAttribute('data-targeting');
       for(const button of $('buildButtons').children){
-        const active=button.dataset.building===pendingBuild;
+        const type=button.dataset.building,active=type===pendingBuild;
+        button.hidden=!!directBuild&&!buildMatchesTile(type,tile);
+        button.disabled=!!staffed;
+        const label=button.querySelector('[data-build-label]');
+        const title=directBuild&&building?`繼續建造${B[type].name}`:B[type].name;
+        if(label.textContent!==title)label.textContent=title;
+        button.querySelector('em').hidden=!!(directBuild&&building);
         button.classList.toggle('active',active);
         button.setAttribute('aria-pressed',active);
       }
@@ -919,8 +974,14 @@
         const button=document.createElement('button');
         button.className='game-button';
         button.dataset.building=type;
-        button.innerHTML=`${buildingIcon(type)}${B[type].name}<em>${cost} · ${time}秒</em>`;
+        button.innerHTML=`${buildingIcon(type)}<span data-build-label>${B[type].name}</span><em>${cost} · ${time}秒</em>`;
         button.onclick=()=>{
+          if(!state||state.ended)return;
+          const tile=selectedTile&&tileState(selectedTile.x,selectedTile.y);
+          if(!selected.size&&canBuildFromTile(tile)&&buildMatchesTile(type,tile)){
+            command('build',{building:type,x:tile.x,y:tile.y,auto:true});
+            return;
+          }
           pendingBuild=pendingBuild===type?null:type;
           attackMode=false;orderMode=false;
           $('attackMode').classList.remove('active');
@@ -1206,6 +1267,7 @@
       ctx.lineWidth=2/camera.zoom;ctx.strokeStyle=attack?'#ffab91':'#e1fff1';ctx.stroke();ctx.globalAlpha=1;
     }
     function draw(){needsDraw=false;if(!canvas.width||!state)return;updateTerrainCache();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.setTransform(dpr*camera.zoom,0,0,dpr*camera.zoom,dpr*(viewW/2-camera.x*TILE*camera.zoom),dpr*(viewH/2-camera.y*TILE*camera.zoom));drawSea();
+      if(hoverPoint)updateBuildingTip();
       ctx.drawImage(terrainCache,0,0);
       const scene=[],now=performance.now();
       const halfW=viewW/(2*camera.zoom*TILE)+2,halfH=viewH/(2*camera.zoom*TILE)+2;
