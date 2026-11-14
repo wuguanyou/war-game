@@ -2,103 +2,598 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#111b23">
-  <title>界域爭鋒｜像素領土戰</title>
+  <meta name="theme-color" content="#f8f5e9">
+  <title>風起群島｜像素即時策略</title>
   <style>
-    :root{color-scheme:dark;--bg:#10181f;--panel:#19242c;--panel2:#202e35;--line:#3d4c4d;--text:#eceddc;--muted:#9ca99e;--teal:#63d5c5;--coral:#f17c6e;--gold:#edc56f;--green:#a2ce7a;--pixel:monospace;font-family:var(--pixel)}
-    *{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -30%,#30413d 0,#17232a 47%,#10181f 100%);color:var(--text);font-family:var(--pixel);font-size:12px}button,input{font:inherit}button{color:inherit}button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}.app{width:min(1700px,100%);margin:auto;padding:15px 18px 24px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:11px}.brand{display:flex;align-items:center;gap:11px}.brand-icon{width:40px;height:40px;display:grid;place-items:center;border:3px solid #68756c;background:#2e4441;color:#d9c37b;font-size:21px;box-shadow:3px 3px 0 #0b1117}.brand h1{font-size:19px;letter-spacing:2px;margin:0}.brand small{display:block;color:#a4b0a2;font-size:9px;margin-top:5px;letter-spacing:1px}.top-right{display:flex;align-items:center;gap:7px}.chip{padding:8px 10px;border:2px solid var(--line);background:#19252c;box-shadow:2px 2px 0 #0a1116;color:#b8c4b6;font-size:10px;white-space:nowrap}.chip b{color:var(--gold)}.control{padding:8px 10px;border:2px solid #596765;background:#293a3c;color:#eef1df;cursor:pointer;box-shadow:2px 2px 0 #0a1116}.control:hover{background:#344a49}.connection{display:inline-block;width:7px;height:7px;margin-right:6px;background:#b56c60}.connection.online{background:#93d789;box-shadow:0 0 7px #93d789}.resources{display:grid;grid-template-columns:repeat(4,minmax(95px,1fr));gap:7px;margin-bottom:10px}.res-card{border:2px solid var(--line);background:linear-gradient(135deg,#25343a,#19252d);padding:8px 11px;box-shadow:2px 2px 0 #0a1116;min-height:52px}.res-name{font-size:9px;color:var(--muted);letter-spacing:1px}.res-val{font-size:16px;color:#f0e9ce;margin-top:4px;font-weight:bold;font-variant-numeric:tabular-nums}.res-val i{float:right;font-style:normal;color:#81938b;font-size:9px;margin-top:5px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:10px}.map-shell,.side,.feed{border:2px solid var(--line);background:#18242b;box-shadow:3px 3px 0 #0a1116}.map-head{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 11px;border-bottom:2px solid var(--line);background:#202e34}.map-head strong{font-size:10px;letter-spacing:1px}.map-head span{font-size:9px;color:#a1b0a1}.canvas-wrap{position:relative;height:min(72vh,760px);min-height:460px;background:#111c23;overflow:hidden}.canvas-wrap canvas{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:crosshair}.map-tools{position:absolute;top:9px;right:9px;display:flex;gap:4px}.map-tools button{width:30px;height:29px;background:#172329d9;border:2px solid #596663;color:#e6e5cf;cursor:pointer;font-weight:bold}.map-tools button:hover{background:#30413f}.map-hint{position:absolute;left:9px;top:9px;padding:7px 9px;background:#172329d9;border:1px solid #56625f;color:#c5cfba;font-size:9px;pointer-events:none}.legend{position:absolute;left:9px;bottom:9px;display:flex;gap:10px;flex-wrap:wrap;background:#152127df;border:1px solid #52615d;padding:7px 8px;color:#c2cbbb;font-size:8px;pointer-events:none}.legend span{display:inline-flex;align-items:center;gap:5px}.swatch{width:8px;height:8px;background:var(--sw);border:1px solid #c9d1bd}.side{display:flex;flex-direction:column;min-height:100%}.side-head{padding:11px;border-bottom:2px solid var(--line);background:#202e34;display:flex;justify-content:space-between;align-items:center}.side-head b{font-size:10px;letter-spacing:1px}.side-head span{font-size:8px;color:#a5b3a6}.context{padding:11px;border-bottom:1px solid #384746}.context-title{display:flex;align-items:center;gap:9px}.context-icon{width:36px;height:36px;display:grid;place-items:center;background:#26383b;border:2px solid #55655c;color:#f0d28a;font-size:15px}.context-title b{font-size:12px}.context-title small{display:block;color:var(--muted);font-size:9px;margin-top:4px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.stat{min-height:43px;padding:7px;background:#131f25;border:1px solid #3a4948}.stat label{display:block;color:#94a397;font-size:8px}.stat strong{display:block;margin-top:5px;font-size:10px;color:#e1e5d3}.bar{height:6px;background:#364542;margin-top:6px;border:1px solid #56635b}.bar i{display:block;height:100%;background:var(--green);width:0}.section{padding:10px 11px;border-bottom:1px solid #384746}.section-title{font-size:8px;color:#9cad9d;letter-spacing:1px;margin-bottom:8px}.button-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.game-button{min-height:37px;padding:6px 7px;border:2px solid #465955;background:#26383a;color:#e9eddb;text-align:left;font-size:9px;cursor:pointer;box-shadow:2px 2px 0 #0d161a}.game-button:hover:not(:disabled){background:#354b48;border-color:#7f9585}.game-button:disabled{opacity:.43;cursor:not-allowed}.game-button.active{border-color:var(--gold);background:#51452e;color:#fff2bd}.game-button em{display:block;font-style:normal;font-size:8px;color:#9db0a3;margin-top:4px}.unit-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.unit-chip{border:1px solid #52645e;background:#26363a;color:#dce4d4;padding:5px 6px;font-size:8px;cursor:pointer}.unit-chip.selected{border-color:var(--gold);color:#ffedb6;background:#51452e}.note{font-size:9px;color:#a9b5a8;line-height:1.7}.notice{padding:8px 10px;min-height:34px;color:#dfc47d;font-size:9px;line-height:1.5;background:#302d24;border-bottom:1px solid #514a38}.feed{display:grid;grid-template-columns:minmax(0,1fr) 295px;margin-top:10px}.feed-title{padding:9px 11px;border-bottom:1px solid #384746;background:#202e34;font-size:9px;letter-spacing:1px;display:flex;justify-content:space-between}.log-list{padding:7px 11px;height:83px;overflow:auto}.log-row{font-size:9px;color:#b6c1b0;margin:4px 0}.log-row time{color:#829389;margin-right:7px}.help{padding:10px;border-left:2px solid var(--line);color:#a7b4a8;font-size:9px;line-height:1.65}.help b{color:#e5d9af}.modal{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:#080e13d9;backdrop-filter:blur(4px);padding:16px}.modal.hidden{display:none}.lobby{width:min(560px,100%);border:3px solid #738178;background:linear-gradient(145deg,#263a3c,#17242c);box-shadow:8px 8px 0 #080e12;padding:23px}.lobby-brand{display:flex;align-items:center;gap:14px}.lobby-brand .brand-icon{width:52px;height:52px;font-size:28px}.lobby h2{margin:0;font-size:20px;letter-spacing:2px}.lobby p{color:#b2c0b2;font-size:10px;line-height:1.8;margin:13px 0 17px}.lobby-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lobby input{width:100%;padding:10px;border:2px solid #586962;background:#101a20;color:#fff0c8;margin-bottom:8px}.lobby .wide{grid-column:1/-1}.lobby button{width:100%;padding:11px 8px;border:2px solid #73877b;background:#314940;color:#f1eed8;cursor:pointer;box-shadow:3px 3px 0 #101619;font-size:10px}.lobby button:hover{background:#426052}.lobby button.secondary{background:#29383e;border-color:#64736f}.lobby .tiny{font-size:8px;color:#91a297;margin-top:13px}.lobby-state{display:none;margin-top:14px;padding:11px;background:#101a20;border:1px solid #566761;color:#c7d0c2;font-size:10px;line-height:1.8}.lobby-state.show{display:block}.share-code{display:inline-block;padding:5px 9px;margin:4px;background:#3c4938;color:#f7da91;font-weight:bold;letter-spacing:3px}.toast{position:fixed;z-index:20;left:50%;bottom:20px;transform:translate(-50%,15px);opacity:0;pointer-events:none;background:#273b36;border:2px solid #718679;color:#f0edda;padding:9px 13px;font-size:10px;box-shadow:3px 3px #080e12;transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}.result{position:fixed;inset:0;z-index:15;display:none;place-items:center;background:#071016c9}.result.show{display:grid}.result-card{padding:28px;text-align:center;border:3px solid #879181;background:#263a3a;box-shadow:8px 8px #080e12;width:min(400px,90vw)}.result-card h2{font-size:20px;color:var(--gold)}.result-card p{font-size:10px;line-height:1.8;color:#c2cbbd}.result-card button{padding:9px 16px;background:#43584a;border:2px solid #8b9b7e;color:white;cursor:pointer}
-    @media(max-width:1000px){.layout{grid-template-columns:minmax(0,1fr) 265px}.feed{grid-template-columns:minmax(0,1fr) 265px}.canvas-wrap{height:66vh}}
-    @media(max-width:760px){.app{padding:9px}.top{align-items:flex-start}.top-right{flex-wrap:wrap;justify-content:flex-end}.layout,.feed{grid-template-columns:1fr}.canvas-wrap{height:55vh;min-height:330px}.side{min-height:0}.feed{margin-top:8px}.help{border-left:0;border-top:2px solid var(--line)}.resources{gap:4px}.res-card{padding:7px}.res-name{font-size:8px}.res-val{font-size:14px}.chip.room-chip{display:none}.legend{font-size:7px}}
-    @media(max-width:460px){.brand h1{font-size:15px}.brand small{font-size:7px}.top-right{gap:4px}.control,.chip{padding:6px;font-size:8px}.canvas-wrap{height:47vh;min-height:290px}.map-head span{display:none}.lobby{padding:16px}.lobby h2{font-size:16px}}
+    :root{
+      color-scheme:dark;
+      --ink:#111d23;--panel:#16262d;--raised:#21343b;--edge:#405656;
+      --muted:#a5b5b3;--paper:#fff1d3;--gold:#edca85;--mint:#8be0b7;
+      font-family:"Microsoft JhengHei UI","Noto Sans TC",sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--ink);color:var(--paper);font-size:14px}
+    button,input,summary{font:inherit}
+    button,summary{cursor:pointer}
+    button{color:inherit}
+    :where(button,input,summary,[tabindex]):focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+    [hidden],.hidden{display:none!important}
+    .app{display:grid;grid-template-rows:auto minmax(0,1fr);height:100vh;height:100dvh;min-height:280px}
+    .top{position:relative;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;padding:10px 20px;background:var(--ink);border-bottom:1px solid #53665b;box-shadow:0 4px 0 #111d2373}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand h1,.guide-card h2,.result-card h2{margin:0;color:var(--paper);letter-spacing:.08em}
+    .brand h1{font-size:18px;white-space:nowrap}
+    .brand-icon,.res-icon,.unit-icon,.building-icon{
+      background-image:var(--sprite);background-position:var(--sprite-x,0%) var(--sprite-y,0%);
+      background-size:var(--sheet-w) var(--sheet-h);background-repeat:no-repeat;image-rendering:pixelated
+    }
+    .brand-icon,.building-icon{--sprite:url('/assets/buildings-16bit.png');--sheet-w:300%;--sheet-h:200%}
+    .brand-icon{width:34px;height:34px;flex:none;background-color:#243d3d;border:1px solid #53675b;border-radius:5px}
+    .resources{display:flex;gap:5px;min-width:0;padding:3px;border:1px solid #38504e;border-radius:8px;background:#0e191e}
+    .res-card{position:relative;display:flex;justify-content:center;align-items:center;gap:6px;min-width:65px;min-height:34px;padding:2px 8px;border-radius:4px}
+    .res-card:hover,.res-card:focus-visible{background:#23353a}
+    .res-icon{--sprite:url('/assets/terrain-16bit.png');--sheet-w:300%;--sheet-h:200%;--sprite-y:100%;width:24px;height:24px;flex:none}
+    .res-card:nth-child(1) .res-icon{--sprite-x:100%}
+    .res-card:nth-child(2) .res-icon{--sprite-y:0%}
+    .res-card:nth-child(4) .res-icon{--sprite-x:50%}
+    .res-val,#timer{font-family:"Geist Mono","Cascadia Mono",Consolas,monospace;font-variant-numeric:tabular-nums;font-weight:700}
+    .res-name{position:absolute;z-index:1;top:calc(100% + 9px);left:50%;transform:translate(-50%,-3px);padding:5px 9px;border:1px solid var(--edge);border-radius:4px;background:var(--ink);color:var(--paper);font-size:12px;white-space:nowrap;pointer-events:none;visibility:hidden;opacity:0;transition:opacity .14s,transform .14s}
+    .res-card:hover .res-name,.res-card:focus .res-name{visibility:visible;opacity:1;transform:translate(-50%,0)}
+    .top-right{display:flex;justify-content:flex-end;align-items:center;gap:10px;min-width:0}
+    .connection-chip{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;white-space:nowrap}
+    .connection{width:7px;height:7px;border-radius:50%;background:#ef9b7f;flex:none}
+    .connection.online{background:var(--mint);box-shadow:0 0 8px #8be0b780}
+    #timer{font-size:13px;color:var(--gold)}
+    details{position:relative}
+    summary{list-style:none}
+    summary::-webkit-details-marker{display:none}
+    .menu>summary,.feed>summary,.map-tools button{display:grid;place-items:center;min-height:34px;padding:4px 10px;border:1px solid var(--edge);border-radius:5px;background:var(--panel);color:var(--paper);white-space:nowrap}
+    .menu[open]>summary,.feed[open]>summary,.menu>summary:hover,.feed>summary:hover,.map-tools button:hover{background:#2a4147;border-color:#788a76}
+    .menu-content,.feed-content{position:absolute;padding:10px;width:min(230px,calc(100vw - 24px));background:var(--ink);border:1px solid #59716a;border-radius:7px;box-shadow:0 8px 22px #07131785}
+    .menu-content{top:calc(100% + 8px);right:0;display:grid;gap:6px}
+    .menu-content p{margin:2px 4px 6px;color:var(--muted);font-size:12px}
+    .menu-content p b{margin-left:4px;color:var(--gold);letter-spacing:.1em}
+    .control,.game-button,.guide-card button,.result-card button{
+      min-height:36px;padding:7px 10px;border:1px solid var(--edge);border-radius:5px;background:var(--raised);text-align:left
+    }
+    :where(.control,.game-button,.guide-card button,.result-card button):hover:not(:disabled){background:#2c464a;border-color:#7b9586}
+    .layout{position:relative;min-height:0;min-width:0}
+    .canvas-wrap{position:absolute;inset:0;background:#2b6182}
+    .canvas-wrap canvas{display:block;width:100%;height:100%;image-rendering:pixelated;cursor:crosshair;touch-action:none}
+    .match{position:absolute;z-index:1;top:12px;left:14px;display:grid;gap:5px;max-width:calc(100% - 146px);padding:8px 10px;border:1px solid #72938a;border-radius:6px;background:#14282eea;box-shadow:0 3px 0 #132f3b80;pointer-events:none}
+    #playerLabel{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700}
+    .base-status{display:flex;flex-wrap:wrap;gap:4px 12px;color:var(--muted);font-size:11px}
+    .base-status b{color:var(--paper);font-variant-numeric:tabular-nums}
+    .map-tools{position:absolute;z-index:1;top:12px;right:14px;display:flex;gap:4px}
+    .map-tools button{min-width:35px;padding:0;font-size:17px}
+    .dock{position:absolute;z-index:2;inset:auto 14px 14px;display:flex;align-items:flex-end;gap:12px;pointer-events:none}
+    .dock>*{pointer-events:auto}
+    .side{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px;max-width:min(740px,100%);max-height:34dvh;overflow:auto;padding:12px;background:#13242cf5;border:1px solid #638077;border-left:3px solid var(--mint);border-radius:7px;box-shadow:0 4px 0 #102636ac}
+    .context{width:164px;min-width:0}
+    .context-title{display:flex;align-items:center;gap:7px}
+    .context-icon{width:31px;height:31px;display:grid;place-items:center;flex:none;border:1px solid var(--edge);border-radius:4px;background-color:#293d42;color:var(--gold)}
+    .context-title b,.context-title small{display:block;overflow-wrap:anywhere}
+    .context-title b{font-size:14px;color:var(--gold)}
+    .context-title small{font-size:11px;color:var(--muted);margin-top:3px}
+    .stats{display:flex;flex-wrap:wrap;gap:6px 10px;margin-top:7px}
+    .stat label,.stat strong{display:block;font-size:11px}
+    .stat label{color:var(--muted)}
+    .bar{margin-top:3px;height:3px;background:#324747}
+    .bar i{display:block;height:100%;background:var(--mint)}
+    .section-title{margin-bottom:6px;color:var(--muted);font-size:11px}
+    .button-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+    .game-button{font-size:12px;line-height:1.3}
+    .game-button em{display:block;color:var(--muted);font-size:10px;font-style:normal;margin-top:2px}
+    .game-button.active{background:#305449;border-color:var(--mint);color:#e0fced}
+    .game-button:disabled{opacity:.5;cursor:default}
+    .unit-list{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;max-width:250px}
+    .unit-chip{padding:2px 5px;border:1px solid #586e64;border-radius:4px;background:#253b40;font-size:10px}
+    .unit-icon,.building-icon{display:inline-block;width:19px;height:19px;vertical-align:middle;margin-right:3px}
+    .unit-icon{--sprite:url('/assets/units-16bit.png');--sheet-w:1300%;--sheet-h:500%;--sprite-y:var(--unit-row)}
+    .context-icon.unit-icon{width:31px;height:31px;color:transparent;margin:0}
+    .note{margin-top:6px;color:var(--muted);font-size:11px}
+    .dock-tools{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+    .feed-content{bottom:calc(100% + 8px);right:0}
+    #serverHint{font-size:11px;color:var(--muted)}
+    .log-list{margin-top:7px;max-height:145px;overflow:auto}
+    .log-row{margin:5px 0;font-size:11px;line-height:1.45}
+    .log-row time{color:var(--gold);margin-right:6px}
+    .minimap-shell{width:147px;padding:5px;border:1px solid #719086;border-radius:7px;background:var(--panel);box-shadow:0 4px 0 #102636ac}
+    .minimap-shell canvas{display:block;width:100%;height:92px;background:#183e41;image-rendering:pixelated;cursor:crosshair}
+    .modal,.result{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:16px;background:#08171dc9;backdrop-filter:blur(4px);overflow:auto}
+    .result{display:none}
+    .result.show{display:grid}
+    .guide-card,.result-card{width:min(100%,480px);padding:24px;border:1px solid #788b73;border-top:3px solid var(--gold);border-radius:9px;background:var(--panel);box-shadow:0 14px 40px #081216a8}
+    .guide-card li,.result-card p{line-height:1.6;color:var(--muted)}
+    .guide-card button,.result-card button{text-align:center}
+    .lobby-page,.guide-card,.result-card{
+      color-scheme:light;
+      --day-ink:#203d39;--day-muted:#46625c;--day-paper:#fffdf5;
+      --day-line:#9dad93;--day-green:#27634c;--day-gold:#f7dfa1;
+      color:var(--day-ink);
+    }
+    :where(.lobby-page,.guide-card,.result-card) :focus-visible{outline-color:#21694d}
+    .guide-card,.result-card{background:var(--day-paper);border-color:var(--day-line);border-top-color:#ca9145}
+    .guide-card h2,.result-card h2{color:var(--day-ink)}
+    .guide-card li,.result-card p{color:var(--day-muted)}
+    :where(.lobby-page,.guide-card,.result-card) :is(.control,.guide-card button,.result-card button){
+      color:var(--day-ink);background:#edf4e6;border-color:#829987;
+    }
+    :where(.lobby-page,.guide-card,.result-card) :is(.control,.guide-card button,.result-card button):hover:not(:disabled){
+      background:#dcebd6;border-color:var(--day-green);
+    }
+    .lobby-page{position:relative;isolation:isolate;min-height:100vh;min-height:100dvh;background:#f4eed7}
+    .lobby-scene{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:61% center}
+    .lobby-page::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(90deg,#fff8e5ed 0%,#fff8e5c9 26%,#fff8e538 47%,transparent 63%)}
+    .lobby-shell{display:flex;flex-direction:column;min-height:inherit;padding:clamp(16px,3vh,34px) clamp(24px,7vw,120px) 24px}
+    .lobby-top{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .lobby-top-tools{display:flex;align-items:center;gap:12px}
+    .lobby-top-tools .connection-chip{color:#23463e;background:#fff8e7eb;padding:6px 10px;border-radius:20px}
+    .lobby-top-tools .connection{background:#a84e3a}
+    .lobby-top-tools .connection.online{background:#34814e}
+    .lobby-top .control{background:#fff8e7eb;border:0;border-radius:20px;padding-inline:14px}
+    .lobby-content{width:min(100%,420px);margin-block:auto;padding:32px 0}
+    .hero-copy h1{margin:0;color:#203f39;font-family:"Noto Serif TC","PMingLiU",serif;font-size:clamp(47px,6.7vw,105px);font-weight:800;line-height:1.08;letter-spacing:.04em;text-shadow:2px 3px #fff1d0;white-space:nowrap}
+    .hero-copy p{margin:12px 0 26px;color:#344e42;font-size:clamp(14px,1.4vw,17px);letter-spacing:.08em;line-height:1.6}
+    .lobby-modes{display:grid;align-items:start;justify-items:start;gap:4px;margin-bottom:21px}
+    .lobby-modes .menu-choice{position:relative;display:flex;align-items:center;gap:14px;min-height:50px;width:100%;padding:5px 28px 5px 2px;border:0;background:transparent;color:#203f39;text-align:left;font-size:clamp(18px,2.1vw,26px);font-weight:700;letter-spacing:.08em;transition:color .18s,transform .18s}
+    .lobby-modes .menu-choice::before{content:"";position:absolute;inset:5px 0 5px -13px;z-index:-1;background:linear-gradient(90deg,#ffedb5dd,transparent);clip-path:polygon(0 0,100% 0,96% 100%,0 100%);opacity:0;transition:opacity .18s}
+    .lobby-modes #createRoom::before{background:linear-gradient(90deg,#f3d292e8,transparent);opacity:1}
+    .lobby-modes .menu-choice:hover:not(:disabled),.lobby-modes .menu-choice:focus-visible{color:#79501e;transform:translateX(5px)}
+    .lobby-modes .menu-choice:hover:not(:disabled)::before,.lobby-modes .menu-choice:focus-visible::before,.lobby-modes details[open] .menu-choice::before{opacity:1}
+    .lobby-modes .menu-choice:disabled{color:#586a61;cursor:default}
+    .menu-choice .menu-mark{width:1.1em;text-align:center;color:#8b6029;font-size:.9em;flex:none}
+    .lobby-modes details{width:100%}
+    .lobby-modes details[open] .menu-mark{transform:rotate(90deg)}
+    .lobby-profile{display:flex;align-items:center;gap:10px;padding-top:13px;border-top:1px solid #8c785861;color:#344e42;font-size:13px}
+    .lobby-profile label,.join-form label{flex:none;font-weight:650}
+    .lobby-page input{width:100%;min-width:0;min-height:40px;padding:7px 10px;background:#fffaf0e6;color:#203f39;border:1px solid #98856b;border-radius:5px}
+    .lobby-profile input{width:min(190px,100%)}
+    .join-form{width:min(100%,320px);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:7px;margin:1px 0 7px;padding-left:34px}
+    .join-form label{grid-column:1/-1;color:#344e42;font-size:12px}
+    #roomInput{text-transform:uppercase;letter-spacing:.12em}
+    .lobby-state{margin-top:14px;color:#68431f;font-size:13px;line-height:1.5}
+    .lobby-state:empty{display:none}
+    .waiting-room{display:grid;gap:12px;margin-top:4px;padding-top:14px;border-top:1px solid #8c785861}
+    .waiting-room h2{margin:0;color:#203f39;font-size:22px}
+    .waiting-room p{margin:0;color:#344e42}
+    .room-members{display:grid;gap:6px;margin:0;padding:0;list-style:none}
+    .room-members li{padding:7px 0;border-bottom:1px solid #8c785840;overflow-wrap:anywhere}
+    .room-members li:last-child{color:#46625c}
+    .waiting-actions{display:flex;flex-wrap:wrap;gap:8px}
+    .share-code{display:inline-block;margin-left:6px;color:#6c4618;font-family:"Cascadia Mono",monospace;font-size:24px;font-weight:bold;letter-spacing:.15em;user-select:all}
+    @media(max-width:620px){
+      .lobby-page{--scene-height:clamp(230px,48svh,420px)}
+      .lobby-shell{padding-inline:22px}
+      .lobby-scene{height:var(--scene-height);object-position:78% 25%}
+      .lobby-page::after{height:var(--scene-height);background:linear-gradient(180deg,transparent 50%,#f4eed7 100%)}
+      .lobby-top{gap:7px}
+      .lobby-top-tools{gap:6px}
+      .lobby-top .brand{padding:4px 8px;border-radius:5px;background:#fff8e7eb}
+      .lobby-top .brand-icon{display:none}
+      .lobby-content{margin:calc(var(--scene-height) - 105px) 0 0;padding:0}
+      .hero-copy p{margin:8px 0 14px}
+      .lobby-modes .menu-choice{min-height:44px}
+    }
+    @media(prefers-reduced-motion:reduce){.lobby-modes .menu-choice,.lobby-modes .menu-choice::before{transition:none}}
+
+    .result-card{text-align:center}
+    .toast{position:fixed;z-index:20;top:72px;left:50%;width:max-content;max-width:calc(100vw - 24px);padding:8px 13px;transform:translate(-50%,-4px);opacity:0;pointer-events:none;background:var(--ink);border:1px solid #8f7956;border-radius:5px;color:var(--paper);transition:opacity .16s,transform .16s}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:760px){
+      .top{padding:7px 10px;gap:7px;grid-template-columns:auto minmax(0,1fr) auto}
+      .brand h1{font-size:15px}
+      .brand-icon{width:29px;height:29px}
+      .resources{justify-self:center;gap:2px}
+      .res-card{padding-inline:4px;min-width:47px;font-size:12px;gap:4px}
+      .res-icon{width:21px;height:21px}
+      .connection-chip{gap:0}
+      #connectionText{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+      .dock{inset:auto 9px 9px;gap:7px}
+      .minimap-shell{width:108px}
+      .minimap-shell canvas{height:70px}
+      .side{gap:8px;padding:8px}
+      .context{width:145px}
+    }
+    @media(max-width:490px){
+      .top{grid-template-columns:1fr auto}
+      .resources{grid-row:2;grid-column:1/-1;justify-self:stretch}
+      .res-card{flex:1;min-height:31px}
+      .top-right{grid-column:2;grid-row:1}
+      .toast{top:100px}
+      .match{left:8px;top:8px}
+      .map-tools{right:8px;top:8px}
+      .dock{flex-direction:column-reverse;align-items:stretch}
+      .side{max-height:43dvh}
+      .context{width:100%}
+      .minimap-shell{width:84px}
+      .minimap-shell canvas{height:52px}
+      .feed>summary{min-height:30px;font-size:12px}
+
+
+    }
+    @media(prefers-reduced-motion:reduce){.res-name,.toast{transition:none}}
+
   </style>
 </head>
 <body>
-  <div class="app">
+  <div class="app" id="game" hidden inert>
     <header class="top">
-      <div class="brand"><div class="brand-icon">▦</div><div><h1>界域爭鋒</h1><small>PIXEL FRONTIER · 即時領土攻防</small></div></div>
-      <div class="top-right"><span class="chip"><i class="connection" id="connectionDot"></i><span id="connectionText">未連線</span></span><span class="chip">我方基地 <b id="ownBaseHp">—</b></span><span class="chip">敵方基地 <b id="enemyBaseHp">未偵察</b></span><span class="chip room-chip">房間 <b id="roomCodeTop">—</b></span><span class="chip" id="timer">00:00</span><button class="control" id="copyRoom">複製房間碼</button><button class="control" id="leaveRoom">離開</button></div>
-    </header>
-    <section class="resources">
-      <div class="res-card"><div class="res-name">▰ 糧 食</div><div class="res-val" id="food">0</div></div>
-      <div class="res-card"><div class="res-name">▧ 木 材</div><div class="res-val" id="wood">0</div></div>
-      <div class="res-card"><div class="res-name">◈ 石 材</div><div class="res-val" id="stone">0</div></div>
-      <div class="res-card"><div class="res-name">✦ 黃 金</div><div class="res-val" id="gold">0</div></div>
-    </section>
-    <main class="layout">
-      <section class="map-shell">
-        <div class="map-head"><strong>戰區格網　24 × 24</strong><span id="playerLabel">等待連線</span></div>
-        <div class="canvas-wrap" id="canvasWrap"><canvas id="map" aria-label="像素戰區地圖"></canvas><div class="map-hint" id="mapHint">點選單位 → 右鍵移動｜滾輪縮放｜中鍵拖曳</div><div class="map-tools"><button id="zoomOut">−</button><button id="zoomHome">⌂</button><button id="zoomIn">+</button></div><div class="legend"><span><i class="swatch" style="--sw:#55cfc4"></i>我方</span><span><i class="swatch" style="--sw:#ed796b"></i>敵方</span><span>🌲 木材</span><span>⛰ 石材</span><span>✦ 黃金</span><span>🍓 糧食</span></div></div>
+      <div class="brand"><div class="brand-icon" aria-hidden="true"></div><h1>風起群島</h1></div>
+      <section class="resources" aria-label="庫存資源">
+        <div class="res-card" role="group" tabindex="0" aria-labelledby="foodName"><span class="res-icon" aria-hidden="true"></span><span class="res-val" id="food">0</span><span class="res-name" id="foodName">糧食</span></div>
+        <div class="res-card" role="group" tabindex="0" aria-labelledby="woodName"><span class="res-icon" aria-hidden="true"></span><span class="res-val" id="wood">0</span><span class="res-name" id="woodName">木材</span></div>
+        <div class="res-card" role="group" tabindex="0" aria-labelledby="stoneName"><span class="res-icon" aria-hidden="true"></span><span class="res-val" id="stone">0</span><span class="res-name" id="stoneName">石材</span></div>
+        <div class="res-card" role="group" tabindex="0" aria-labelledby="goldName"><span class="res-icon" aria-hidden="true"></span><span class="res-val" id="gold">0</span><span class="res-name" id="goldName">黃金</span></div>
       </section>
-      <aside class="side">
-        <div class="side-head"><b>指揮與情報</b><span id="selectionCount">未選取單位</span></div>
-        <div class="context" id="context"><div class="context-title"><div class="context-icon">⌖</div><div><b id="contextName">等待戰區同步</b><small id="contextSub">建立或加入一場對局</small></div></div><div id="contextBody" class="stats"></div></div>
-        <div class="notice" id="notice">第一位玩家建立房間，第二位玩家輸入房間碼加入。</div>
-        <div class="section" id="unitActions"><div class="section-title">部隊命令</div><div class="button-grid"><button class="game-button" data-stance="aggressive">⚔ 主動攻擊<em>視野內自動交戰</em></button><button class="game-button" data-stance="hold">⬟ 堅守位置<em>不追擊敵軍</em></button><button class="game-button" data-stance="force">➜ 強制移動<em>忽略敵軍行進</em></button><button class="game-button" id="attackMode">◎ 指定攻擊<em>再右鍵敵格或建築</em></button></div><div class="unit-list" id="unitList"></div></div>
-        <div class="section" id="buildActions"><div class="section-title">村民建築與採集</div><div class="button-grid" id="buildButtons"></div><div class="note" style="margin-top:8px">選取村民後選建築，再點我方空地放置。採集站建在木、石或金礦格。</div></div>
-        <div class="section" id="trainActions"><div class="section-title">生產部隊</div><div class="button-grid" id="trainButtons"></div><div class="note" style="margin-top:8px" id="queueInfo"></div></div>
-      </aside>
+      <div class="top-right">
+        <span class="connection-chip"><i class="connection" id="connectionDot" aria-hidden="true"></i><span id="connectionText">未連線</span></span>
+        <span id="timer" aria-label="對局時間">00:00</span>
+        <details class="menu" id="gameMenu">
+          <summary>選單</summary>
+          <div class="menu-content">
+            <p>房間 <b id="roomCodeTop">—</b></p>
+            <button class="control" id="showGuide">操作指南</button>
+            <button class="control" id="copyRoom">分享房間</button>
+            <button class="control" id="leaveRoom">返回大廳</button>
+          </div>
+        </details>
+      </div>
+    </header>
+    <main class="layout">
+      <div class="canvas-wrap"><canvas id="map" tabindex="-1" aria-label="像素戰區地圖"></canvas></div>
+      <div class="match">
+        <span id="playerLabel">翡翠群島</span>
+        <div class="base-status"><span>主堡 <b id="ownBaseHp">—</b></span><span>敵堡 <b id="enemyBaseHp">未偵察</b></span></div>
+      </div>
+      <div class="map-tools" aria-label="地圖縮放">
+        <button id="zoomOut" aria-label="縮小地圖" title="縮小地圖">−</button>
+        <button id="zoomHome" aria-label="重置鏡頭" title="重置鏡頭">⌂</button>
+        <button id="zoomIn" aria-label="放大地圖" title="放大地圖">+</button>
+      </div>
+      <div class="dock">
+        <aside class="side" id="commandDock" aria-label="指揮與情報" hidden>
+          <div class="context">
+            <div class="context-title"><div class="context-icon" id="contextIcon" aria-hidden="true">⌖</div><div><b id="contextName"></b><small id="contextSub"></small></div></div>
+            <div id="contextBody" class="stats"></div>
+          </div>
+          <div class="section" id="unitActions" hidden>
+            <div class="section-title">部隊命令</div>
+            <div class="button-grid">
+              <button class="game-button" data-stance="aggressive">⚔ 主動攻擊</button>
+              <button class="game-button" data-stance="hold">⬟ 堅守位置</button>
+              <button class="game-button" data-stance="force">➜ 強制移動</button>
+              <button class="game-button" id="attackMode">◎ 指定攻擊</button>
+            </div>
+            <div class="unit-list" id="unitList"></div>
+          </div>
+          <div class="section" id="buildActions" hidden><div class="section-title">建造</div><div class="button-grid" id="buildButtons"></div></div>
+          <div class="section" id="trainActions" hidden><div class="section-title">生產部隊</div><div class="button-grid" id="trainButtons"></div><div class="note" id="queueInfo"></div></div>
+        </aside>
+        <div class="dock-tools">
+          <details class="feed" id="battleLog">
+            <summary>戰報</summary>
+            <div class="feed-content"><div id="serverHint">等待戰區同步</div><div class="log-list" id="logs"></div></div>
+          </details>
+          <section class="minimap-shell" aria-label="戰區地圖"><canvas id="minimap" width="147" height="92" aria-label="戰區縮圖" title="點擊移動鏡頭"></canvas></section>
+        </div>
+      </div>
     </main>
-    <section class="feed"><div><div class="feed-title"><b>戰區通報</b><span id="serverHint">房間同步狀態</span></div><div class="log-list" id="logs"></div></div><div class="help"><b>核心規則</b><br>村民直採，資源直接入庫。攻下土地須把土地耐久打至 0；敵方建築要先摧毀才能打土地。單位可同格，攻擊依圓形射程結算。摧毀敵方主基地是唯一勝利條件。</div></section>
   </div>
 
-  <div class="modal" id="lobbyModal"><div class="lobby">
-    <div class="lobby-brand"><div class="brand-icon">▦</div><div><h2>界域爭鋒</h2><small style="color:#a8b6a9;font-size:8px;letter-spacing:1px">24×24 PIXEL TERRITORY RTS</small></div></div>
-    <p>村民採集，士兵開路，逐格攻下前線。建造兵營與防禦塔，摧毀敵方主基地贏得對局。可建立 1v1 房間，或先挑戰像素守軍。</p>
-    <input id="nameInput" maxlength="16" placeholder="你的指揮官名稱" value="指揮官">
-    <div class="lobby-grid"><button id="createRoom">建立 1v1 房間</button><button class="secondary" id="practice">對戰 AI 守軍</button><input class="wide" id="roomInput" maxlength="12" placeholder="輸入房間碼加入好友對局" style="text-transform:uppercase"><button class="wide secondary" id="joinRoom">加入房間</button></div>
-    <div class="lobby-state" id="lobbyState"></div>
-    <div class="tiny">多人對局由同一遊戲伺服器同步。分享公開遊戲網址與房間碼即可邀請好友。</div>
-  </div></div>
-  <div class="result" id="result"><div class="result-card"><div style="font-size:32px">▦</div><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
-  <div class="toast" id="toast"></div>
+  <main class="lobby-page" id="lobbyPage" aria-labelledby="lobbyTitle">
+    <img class="lobby-scene" src="/assets/lobby-windward.jpg" alt="" fetchpriority="high">
+    <div class="lobby-shell">
+      <header class="lobby-top">
+        <div class="brand"><span class="brand-icon" aria-hidden="true"></span><strong>遊戲大廳</strong></div>
+        <div class="lobby-top-tools">
+          <span class="connection-chip"><i class="connection" id="lobbyConnectionDot" aria-hidden="true"></i><span id="lobbyConnectionText">未連線</span></span>
+          <button class="control" id="lobbyGuide" type="button">操作指南</button>
+        </div>
+      </header>
+      <div class="lobby-content">
+        <div class="hero-copy">
+          <h1 id="lobbyTitle" tabindex="-1">風起群島</h1>
+          <p>即時策略對戰 · 擴張領土，攻下敵方主堡</p>
+        </div>
+        <div id="lobbyOptions">
+          <nav class="lobby-modes" aria-label="對局模式">
+            <button class="menu-choice" id="createRoom" type="button" disabled><span class="menu-mark" aria-hidden="true">⚔︎</span>建立 1 對 1 對戰</button>
+            <details>
+              <summary class="menu-choice"><span class="menu-mark" aria-hidden="true">›</span>加入好友對戰</summary>
+              <form class="join-form" id="joinForm">
+                <label for="roomInput">六碼房間碼</label><input id="roomInput" maxlength="6" autocomplete="off" spellcheck="false" required>
+                <button class="control" id="joinRoom" type="submit" disabled>加入</button>
+              </form>
+            </details>
+            <button class="menu-choice" id="practice" type="button" disabled><span class="menu-mark" aria-hidden="true">▷</span>單人 AI 練習</button>
+          </nav>
+          <div class="lobby-profile"><label for="nameInput">指揮官名稱</label><input id="nameInput" maxlength="16" value="指揮官"></div>
+        </div>
+        <section class="waiting-room" id="waitingRoom" aria-labelledby="waitingTitle" hidden>
+          <h2 id="waitingTitle" tabindex="-1">等待對手</h2>
+          <p>房間碼 <strong class="share-code" id="waitingCode"></strong></p>
+          <ul class="room-members"><li id="waitingHost"></li><li id="waitingGuest"></li></ul>
+          <div class="waiting-actions"><button class="control" id="copyWaitingCode" type="button">複製房間碼</button><button class="control" id="cancelRoom" type="button">返回大廳</button></div>
+        </section>
+        <p class="lobby-state" id="lobbyState" role="status"></p>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選取，Shift 加選，拖曳框選；雙擊可選取附近同類單位。</li><li>右鍵移動；村民對資源右鍵採集。選村民後按建築，再點我方空地施工。</li><li>選取主基地或兵營後，點選生產項目加入佇列。</li><li>「指定攻擊」後右鍵敵軍、敵方建築或相鄰敵方土地；摧毀主基地獲勝。</li><li>滾輪縮放；中鍵或 WASD／方向鍵移動鏡頭；點擊縮圖可跳轉戰區。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-card"><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
+  <div class="toast" id="toast" role="status"></div>
 
   <script>
   (()=>{
     'use strict';
-    const $=id=>document.getElementById(id),canvas=$('map'),ctx=canvas.getContext('2d'),SIZE=24,TILE=28;
-    const COLORS=['#58d2c6','#f17b6d'];
+    const $=id=>document.getElementById(id),canvas=$('map'),ctx=canvas.getContext('2d'),miniCanvas=$('minimap'),miniCtx=miniCanvas.getContext('2d'),SIZE=24,TILE=28;
+    const COLORS=['#72e6bf','#f48770'];
+    const terrainAtlas=new Image(),buildingAtlas=new Image(),unitAtlas=new Image();
+    terrainAtlas.src='/assets/terrain-16bit.png';
+    buildingAtlas.src='/assets/buildings-16bit.png';
+    unitAtlas.src='/assets/units-16bit.png';
+    const UNIT_ROWS={villager:0,sword:1,archer:2,pike:3,siege:4};
+    const BUILDING_SPRITES={base:0,barracks:1,tower:2,farm:3,gather:4};
+    const WALK_FRAMES=[2,0,3,0],CART_FRAMES=[2,3,2,3],STRIDE=.7;
+    const WORK_FRAMES={build:[6,7,7,6],wood:[9,10,10,9],food:[11,12,12,11],mineral:[4,5,5,4]};
+    const TERRAIN_COLORS={grass:['#83ac60','#88ae63','#7fa659','#8bb168'],forest:['#6a9255','#729758','#688f54','#709353'],stone:['#92917d','#97957e','#8f8e7c','#999883'],gold:['#a39a67','#a99c66','#9d9465','#a49a6a'],berry:['#809e58','#829f5c','#7c9c58','#84a15e'],water:['#326e8b','#377492','#316e8b','#39738e']};
     const U={villager:{name:'村民',icon:'V',range:.8,vision:4,cost:'糧45',patterns:['0001000','0011100','0111110','0011100','0011100','0110110','0100010']},sword:{name:'劍士',icon:'S',range:1.25,vision:4,cost:'糧55 木15',patterns:['0001000','0001100','0111110','0011100','0011100','0101010','1100011']},archer:{name:'弓箭手',icon:'A',range:5.2,vision:6,cost:'糧45 木28',patterns:['0001000','0011100','0110110','0011100','0011100','0101010','1000001']},pike:{name:'長槍兵',icon:'P',range:1.35,vision:4,cost:'糧55 木20',patterns:['0001000','0001000','0111110','0011100','0011100','0101010','1100011']},siege:{name:'攻城車',icon:'C',range:3.1,vision:3.5,cost:'木70 石55 金20',patterns:['0000000','0111110','1111111','1011101','1111111','0101010','1010101']}};
     const B={base:{name:'主基地',icon:'▣'},barracks:{name:'兵營',icon:'▤'},tower:{name:'防禦塔',icon:'♜'},farm:{name:'農場',icon:'▥'},gather:{name:'採集站',icon:'⚒'}};
     const RES={wood:'木材',stone:'石材',gold:'黃金',food:'糧食'};
-    let ws=null,state=null,slot=0,room='',token='',selected=new Set(),selectedTile=null,attackMode=false,pendingBuild=null,toastTimer=null,lastLogKey='',camera={x:12,y:12,zoom:1},dpr=1,viewW=0,viewH=0,lastFrame=0,keys=new Set(),drag=null,roomAi=false,reconnectTimer=null,reconnectDelay=1000,resumeAttempt=false,hasConnected=false;
+    let ws=null,state=null,slot=0,room='',selected=new Set(),selectedTile=null,attackMode=false,pendingBuild=null,toastTimer=null,lastLogKey='',camera={x:12,y:12,zoom:1},dpr=1,viewW=0,viewH=0,lastFrame=0,keys=new Set(),drag=null,roomAi=false,reconnectTimer=null,reconnectDelay=1000,resumeAttempt=false,lobbyBusy=false,lastLobbyAction=null;
     const patterns={grass:['0000000','0010000','0000000','0000100','0000000','0100000','0000000']};
     function showToast(s){const e=$('toast');e.textContent=s;e.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('show'),2300)}
     function send(type,data={}){if(!ws||ws.readyState!==1){showToast('尚未連上伺服器，請先啟動 node server.js');return}ws.send(JSON.stringify({type,...data}))}
     function command(action,extra={}){send('command',{command:{action,units:[...selected],...extra}})}
-    function setConnection(ok,text){$('connectionDot').classList.toggle('online',ok);$('connectionText').textContent=text}
+    function setLobbyStatus(message){$('lobbyState').textContent=message}
+    function setLobbyBusy(busy){
+      lobbyBusy=busy;
+      for(const id of ['practice','createRoom','joinRoom'])$(id).disabled=busy||ws?.readyState!==1;
+    }
+    function setConnection(ok,text){
+      $('connectionDot').classList.toggle('online',ok);
+      $('lobbyConnectionDot').classList.toggle('online',ok);
+      $('connectionText').textContent=text;
+      $('lobbyConnectionText').textContent=text;
+      setLobbyBusy(lobbyBusy);
+    }
     function scheduleReconnect(){
       if(reconnectTimer)return;
-      const wait=reconnectDelay;reconnectDelay=Math.min(30000,Math.round(reconnectDelay*1.8));
+      const wait=reconnectDelay;
+      reconnectDelay=Math.min(30000,Math.round(reconnectDelay*1.8));
       reconnectTimer=setTimeout(()=>{reconnectTimer=null;connect()},wait);
     }
+    function showWaitingRoom(manageFocus=false){
+      $('lobbyOptions').hidden=true;
+      $('waitingRoom').hidden=false;
+      $('waitingCode').textContent=room;
+      if(manageFocus&&guide.classList.contains('hidden'))$('waitingTitle').focus();
+    }
+    function showLobbyOptions(){
+      $('game').hidden=true;
+      $('game').inert=true;
+      $('result').classList.remove('show');
+      $('lobbyPage').hidden=false;
+      $('waitingRoom').hidden=true;
+      $('lobbyOptions').hidden=false;
+    }
+    function clearSavedRoom(){
+      sessionStorage.removeItem('frontierRoom');
+      sessionStorage.removeItem('frontierToken');
+    }
     function connect(){
-      const protocol=location.protocol==='https:'?'wss:':'ws:';const host=location.host||'localhost:8080';
-      try{ws=new WebSocket(`${protocol}//${host}`)}catch{$('lobbyState').classList.add('show');$('lobbyState').textContent='無法建立連線，正在自動重試…';scheduleReconnect();return}
+      const protocol=location.protocol==='https:'?'wss:':'ws:';
+      try{ws=new WebSocket(`${protocol}//${location.host||'localhost:8080'}`)}
+      catch{setLobbyStatus('無法建立連線，正在自動重試。');scheduleReconnect();return}
       setConnection(false,'連線中');
-      ws.onopen=()=>{reconnectDelay=1000;hasConnected=true;setConnection(true,'已連線');const savedRoom=sessionStorage.getItem('frontierRoom'),savedToken=sessionStorage.getItem('frontierToken');if(savedRoom&&savedToken){resumeAttempt=true;send('join',{room:savedRoom,token:savedToken,name:$('nameInput').value||'指揮官'});$('lobbyState').classList.add('show');$('lobbyState').textContent='正在嘗試重新加入上一場對局…'}else resumeAttempt=false};
-      ws.onclose=()=>{setConnection(false,'重新連線中');if(state&&!state.ended)$('serverHint').textContent='連線中斷，正在嘗試恢復戰局…';else if(!hasConnected){$('lobbyState').classList.add('show');$('lobbyState').textContent='正在連線遊戲伺服器…';}scheduleReconnect()};
-      ws.onerror=()=>{setConnection(false,'重新連線中');$('lobbyState').classList.add('show');$('lobbyState').textContent='遊戲伺服器目前無回應，正在自動重試…'};
-      ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}if(m.type==='joined'){resumeAttempt=false;room=m.room;slot=m.slot;token=m.token;roomAi=m.ai;sessionStorage.setItem('frontierRoom',room);sessionStorage.setItem('frontierToken',token);$('roomCodeTop').textContent=room;$('lobbyState').classList.add('show');$('lobbyState').innerHTML=`房間碼 <span class="share-code">${room}</span><br>${roomAi?'已建立 AI 練習對局，正在載入戰區。':'已建立房間，等待另一位玩家加入。把房間碼分享給對手。'}`;}
-        else if(m.type==='lobby'){$('lobbyState').classList.add('show');$('lobbyState').innerHTML=`房間碼 <span class="share-code">${m.room}</span><br>${m.ai?'AI 練習對局準備中…':m.count<2?'等待對手加入…':'兩名玩家已就緒，正在同步戰區…'}`;}
-        else if(m.type==='state'){smoothState(m);slot=m.slot;room=m.room||room;selected=new Set([...selected].filter(id=>m.units.some(u=>u.id===id&&u.owner===slot)));$('lobbyModal').classList.add('hidden');$('result').classList.toggle('show',!!m.ended);if(m.ended){$('resultTitle').textContent=m.winner===-1?'戰局平手':m.winner===slot?'戰區勝利':'主基地失守';$('resultText').textContent=m.winner===-1?'雙方主基地同時摧毀。':m.winner===slot?'你摧毀了敵方主基地。':'你的主基地遭到摧毀。';}renderUI();}
-        else if(m.type==='notice')showToast(m.text);else if(m.type==='status'){$('serverHint').textContent=m.text;showToast(m.text)}else if(m.type==='error'){showToast(m.text);$('lobbyState').classList.add('show');$('lobbyState').textContent=m.text;if(resumeAttempt){resumeAttempt=false;sessionStorage.removeItem('frontierRoom');sessionStorage.removeItem('frontierToken');room='';token='';state=null;$('lobbyModal').classList.remove('hidden');}}
+      ws.onopen=()=>{
+        reconnectDelay=1000;
+        setConnection(true,'已連線');
+        const savedRoom=sessionStorage.getItem('frontierRoom');
+        const savedToken=sessionStorage.getItem('frontierToken');
+        if(savedRoom&&savedToken){
+          resumeAttempt=true;
+          setLobbyBusy(true);
+          setLobbyStatus('正在恢復房間連線…');
+          send('join',{room:savedRoom,token:savedToken,name:$('nameInput').value||'指揮官'});
+        }else{
+          resumeAttempt=false;
+          setLobbyBusy(false);
+          setLobbyStatus('');
+        }
+      };
+      ws.onclose=()=>{
+        setConnection(false,'重新連線中');
+        setLobbyBusy(false);
+        if(state&&!state.ended)$('serverHint').textContent='連線中斷，正在嘗試恢復戰局…';
+        else setLobbyStatus('與伺服器的連線中斷，正在自動重試。');
+        scheduleReconnect();
+      };
+      ws.onerror=()=>setLobbyStatus('遊戲伺服器暫時無法連線，正在自動重試。');
+      ws.onmessage=event=>{
+        let message;
+        try{message=JSON.parse(event.data)}catch{return}
+        if(message.type==='joined'){
+          resumeAttempt=false;
+          ({room,slot,ai:roomAi}=message);
+          sessionStorage.setItem('frontierRoom',room);
+          sessionStorage.setItem('frontierToken',message.token);
+          $('roomCodeTop').textContent=room;
+          if(!roomAi&&!state){
+            $('waitingHost').textContent=message.name;
+            $('waitingGuest').textContent='等待好友加入';
+            showWaitingRoom($('waitingRoom').hidden);
+          }
+        }else if(message.type==='lobby'){
+          setLobbyStatus(message.ai?'正在載入 AI 練習…':message.count<2?'把房間碼分享給好友即可開始。':'雙方已加入，正在載入戰區…');
+          if(!message.ai&&!state){
+            $('waitingHost').textContent=message.names?.[0]||'等待房主';
+            $('waitingGuest').textContent=message.names?.[1]||'等待好友加入';
+            $('waitingTitle').textContent=message.count<2?'等待對手':'正在進入戰區';
+            showWaitingRoom();
+          }
+        }else if(message.type==='state'){
+          const entering=!state,finished=message.ended&&!state?.ended;
+          smoothState(message);
+          slot=message.slot;
+          room=message.room||room;
+          selected=new Set([...selected].filter(id=>message.units.some(u=>u.id===id&&u.owner===slot)));
+          $('lobbyPage').hidden=true;
+          $('game').hidden=false;
+          $('game').inert=!!message.ended||!guide.classList.contains('hidden');
+          $('result').classList.toggle('show',!!message.ended);
+          if(entering){camera.ready=false;resize();if(!$('game').inert)canvas.focus()}
+          if(message.ended){
+            $('resultTitle').textContent=message.winner===-1?'戰局平手':message.winner===slot?'戰區勝利':'主基地失守';
+            $('resultText').textContent=message.winner===-1?'雙方主基地同時摧毀。':message.winner===slot?'你摧毀了敵方主基地。':'你的主基地遭到摧毀。';
+            if(finished){guide.classList.add('hidden');$('resultAgain').focus()}
+          }
+          renderUI();
+        }else if(message.type==='notice')showToast(message.text);
+        else if(message.type==='status'){$('serverHint').textContent=message.text;showToast(message.text)}
+        else if(message.type==='error'){
+          if(resumeAttempt){
+            resumeAttempt=false;
+            clearSavedRoom();
+            room='';
+            state=null;
+            showLobbyOptions();
+          }
+          setLobbyBusy(false);
+          setLobbyStatus(message.text);
+          if(!$('lobbyPage').hidden&&guide.classList.contains('hidden')){
+            (lastLobbyAction===$('joinRoom')?$('roomInput'):lastLobbyAction??$('lobbyTitle')).focus();
+          }
+        }
       };
     }
-    function startJoin(kind){const name=$('nameInput').value.trim()||'指揮官';if(!ws||ws.readyState!==1){showToast('先啟動遊戲伺服器：node server.js');return}sessionStorage.removeItem('frontierRoom');sessionStorage.removeItem('frontierToken');$('lobbyState').classList.remove('show');const data={name};if(kind==='join')data.room=$('roomInput').value.trim().toUpperCase();send(kind,data)}
-    $('createRoom').onclick=()=>startJoin('create');$('practice').onclick=()=>startJoin('practice');$('joinRoom').onclick=()=>{if(!$('roomInput').value.trim())return showToast('請輸入好友提供的房間碼。');startJoin('join')};
-    $('copyRoom').onclick=async()=>{if(!room)return showToast('目前沒有房間碼。');try{await navigator.clipboard.writeText(room);showToast('房間碼已複製。')}catch{showToast(`房間碼：${room}`)}};
-    $('leaveRoom').onclick=()=>{sessionStorage.removeItem('frontierRoom');sessionStorage.removeItem('frontierToken');location.reload()};
-    $('resultAgain').onclick=()=>{sessionStorage.removeItem('frontierRoom');sessionStorage.removeItem('frontierToken');location.reload()};
-    document.querySelectorAll('[data-stance]').forEach(b=>b.onclick=()=>{if(!selected.size)return showToast('先選取一支或多支我方部隊。');command('stance',{stance:b.dataset.stance});document.querySelectorAll('[data-stance]').forEach(x=>x.classList.toggle('active',x===b));});
-    $('attackMode').onclick=()=>{attackMode=!attackMode;$('attackMode').classList.toggle('active',attackMode);showToast(attackMode?'攻擊模式：右鍵敵軍、建築或相鄰敵方土地。':'已返回一般移動模式。')};
-    $('zoomIn').onclick=()=>zoomAt(1.18);$('zoomOut').onclick=()=>zoomAt(1/1.18);$('zoomHome').onclick=()=>{camera.x=12;camera.y=12;fitZoom()};
-    function resize(){const r=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);viewW=r.width;viewH=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);if(!camera.ready){fitZoom();camera.ready=true}draw()}
+    function startJoin(kind,button){
+      if(lobbyBusy||ws?.readyState!==1)return;
+      const name=$('nameInput').value.trim()||'指揮官';
+      const data={name};
+      if(kind==='join'){
+        data.room=$('roomInput').value.trim().toUpperCase();
+        if(!/^[A-F0-9]{6}$/.test(data.room)){
+          setLobbyStatus('請輸入六碼房間碼。');
+          $('roomInput').focus();
+          return;
+        }
+      }
+      clearSavedRoom();
+      sessionStorage.setItem('frontierName',name);
+      lastLobbyAction=button;
+      setLobbyBusy(true);
+      setLobbyStatus('正在連線至房間…');
+      send(kind,data);
+    }
+    $('nameInput').value=sessionStorage.getItem('frontierName')||$('nameInput').value;
+    $('createRoom').onclick=()=>startJoin('create',$('createRoom'));
+    $('practice').onclick=()=>startJoin('practice',$('practice'));
+    $('joinForm').onsubmit=event=>{event.preventDefault();startJoin('join',$('joinRoom'))};
+    async function copyRoomCode(){
+      if(!room)return;
+      try{await navigator.clipboard.writeText(room);showToast('房間碼已複製。')}
+      catch{showToast(`房間碼：${room}`)}
+    }
+    $('copyRoom').onclick=copyRoomCode;
+    $('copyWaitingCode').onclick=copyRoomCode;
+    const gameMenu=$('gameMenu'),battleLog=$('battleLog'),guide=$('guideModal');
+    function closeGuide(){
+      guide.classList.add('hidden');
+      $('lobbyPage').inert=false;
+      $('game').inert=!state||!!state.ended;
+      if(!$('lobbyPage').hidden)$('lobbyGuide').focus();
+      else if(!$('game').inert)gameMenu.querySelector('summary').focus();
+    }
+    function openGuide(){
+      gameMenu.open=false;
+      $('lobbyPage').inert=true;
+      $('game').inert=true;
+      keys.clear();
+      guide.classList.remove('hidden');
+      $('closeGuide').focus();
+    }
+    $('showGuide').onclick=openGuide;
+    $('lobbyGuide').onclick=openGuide;
+    $('closeGuide').onclick=closeGuide;
+    guide.addEventListener('click',event=>{if(event.target===guide)closeGuide()});
+    document.addEventListener('pointerdown',event=>{
+      for(const panel of [gameMenu,battleLog])if(panel.open&&!panel.contains(event.target))panel.open=false;
+    });
+    $('copyRoom').addEventListener('click',()=>{gameMenu.open=false;gameMenu.querySelector('summary').focus()});
+    function returnToLobby(){
+      clearSavedRoom();
+      location.reload();
+    }
+    $('cancelRoom').onclick=returnToLobby;
+    $('leaveRoom').onclick=returnToLobby;
+    $('resultAgain').onclick=returnToLobby;
+
+    const stanceButtons=document.querySelectorAll('[data-stance]');
+    stanceButtons.forEach(button=>button.onclick=()=>{
+      if(selected.size)command('stance',{stance:button.dataset.stance});
+    });
+    $('attackMode').onclick=()=>{
+      attackMode=!attackMode;
+      pendingBuild=null;
+      showToast(attackMode?'攻擊模式：右鍵敵軍、建築或相鄰敵方土地。':'已返回一般移動模式。');
+      renderUI();
+    };
+    $('zoomIn').onclick=()=>zoomAt(1.18);$('zoomOut').onclick=()=>zoomAt(1/1.18);$('zoomHome').onclick=()=>{camera.x=12;camera.y=12;fitZoom();draw()};
+    function resize(){const r=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);viewW=r.width;viewH=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);if(!camera.ready){fitZoom();camera.ready=true}resizeMinimap();draw()}
+    let miniDpr=1;function resizeMinimap(){const r=miniCanvas.getBoundingClientRect();miniDpr=Math.min(window.devicePixelRatio||1,2);miniCanvas.width=Math.max(1,Math.round(r.width*miniDpr));miniCanvas.height=Math.max(1,Math.round(r.height*miniDpr))}
+    function drawMinimap(){if(!state||!miniCanvas.width||!miniCanvas.height)return;const w=miniCanvas.width/miniDpr,h=miniCanvas.height/miniDpr,cw=w/SIZE,ch=h/SIZE;miniCtx.setTransform(miniDpr,0,0,miniDpr,0,0);miniCtx.clearRect(0,0,w,h);miniCtx.fillStyle='#133e43';miniCtx.fillRect(0,0,w,h);const tc={grass:'#83ac60',forest:'#6a9255',stone:'#92917d',gold:'#a39a67',berry:'#809e58',water:'#326e8b'};for(const t of state.tiles){const x=t.x*cw,y=t.y*ch;if(t.unseen&&t.terrain!=='water'){miniCtx.fillStyle='#183e41';miniCtx.fillRect(x,y,cw+.3,ch+.3);continue}miniCtx.fillStyle=tc[t.terrain]||'#183e41';miniCtx.fillRect(x,y,cw+.3,ch+.3);if(t.owner>=0){miniCtx.fillStyle=t.owner===slot?'#72e6bf':'#f48770';miniCtx.globalAlpha=.55;miniCtx.fillRect(x,y,cw+.3,ch+.3);miniCtx.globalAlpha=1}if(t.building){miniCtx.fillStyle=t.building.owner===slot?'#ecdfa9':'#ef8970';miniCtx.fillRect(x+cw*.2,y+ch*.2,cw*.6,ch*.6)}}for(const u of state.units){miniCtx.fillStyle=u.owner===slot?'#d9ffe7':'#ffd9c8';miniCtx.fillRect(u.x/SIZE*w-1,u.y/SIZE*h-1,2,2)}const left=(camera.x-viewW/(2*camera.zoom*TILE))/SIZE*w,top=(camera.y-viewH/(2*camera.zoom*TILE))/SIZE*h,vw=viewW/(camera.zoom*TILE)/SIZE*w,vh=viewH/(camera.zoom*TILE)/SIZE*h;miniCtx.strokeStyle='#f7e3a5';miniCtx.lineWidth=1.5;miniCtx.strokeRect(left,top,vw,vh)}
+    miniCanvas.addEventListener('pointerdown',e=>{if(!state)return;const r=miniCanvas.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*SIZE,y=(e.clientY-r.top)/r.height*SIZE;camera.x=x;camera.y=y;clampCamera();draw()});
     function fitZoom(){camera.zoom=Math.max(.25,Math.min(1.65,Math.min(viewW,viewH)/(SIZE*TILE)*.97))}
     function zoomAt(mult,px=viewW/2,py=viewH/2){const old=camera.zoom,next=Math.max(.42,Math.min(2.4,old*mult));camera.x+=(px-viewW/2)*(1/old-1/next)/TILE;camera.y+=(py-viewH/2)*(1/old-1/next)/TILE;camera.zoom=next;clampCamera();draw()}
     function clampCamera(){const halfW=viewW/(2*camera.zoom*TILE),halfH=viewH/(2*camera.zoom*TILE);camera.x=Math.max(-halfW+1,Math.min(SIZE+halfW-1,camera.x));camera.y=Math.max(-halfH+1,Math.min(SIZE+halfH-1,camera.y))}
     function screenToTile(e){const r=canvas.getBoundingClientRect(),sx=e.clientX-r.left,sy=e.clientY-r.top;const wx=(sx-viewW/2)/(camera.zoom*TILE)+camera.x,wy=(sy-viewH/2)/(camera.zoom*TILE)+camera.y;return{x:Math.floor(wx),y:Math.floor(wy),sx,sy,wx,wy}}
-    function smoothState(next){const prev=state,now=performance.now(),duration=prev?Math.max(90,(next.elapsed-prev.elapsed)*1000):0,old=new Map((prev?.units||[]).map(u=>[u.id,u]));next.units=next.units.map(u=>{const before=old.get(u.id);if(!before)return{...u,fromX:u.x,fromY:u.y,receivedAt:now,duration:0};const pos=visualPosition(before,now);return{...u,fromX:pos.x,fromY:pos.y,receivedAt:now,duration};});state=next}
-    function visualPosition(u,now=performance.now()){if(!u.duration)return{x:u.x,y:u.y};const p=Math.max(0,Math.min(1,(now-u.receivedAt)/u.duration));return{x:u.fromX+(u.x-u.fromX)*p,y:u.fromY+(u.y-u.fromY)*p}}
+    function smoothState(next){
+      const prev=state?.room===next.room?state:null,now=performance.now();
+      const elapsed=prev?next.elapsed-prev.elapsed:0;
+      const duration=elapsed>=0&&elapsed<.75?Math.max(90,Math.min(220,elapsed*1000)):0;
+      const old=new Map((prev?.units||[]).map(u=>[u.id,u])),stacks=new Map();
+      for(const u of next.units){
+        const key=`${Math.floor(u.x)},${Math.floor(u.y)},${u.owner}`;
+        if(!stacks.has(key))stacks.set(key,[]);
+        stacks.get(key).push(u);
+      }
+      for(const stack of stacks.values()){
+        stack.sort((a,b)=>a.id.localeCompare(b.id));
+        const rows=Math.ceil(stack.length/3),rowSpacing=Math.min(4,12/Math.max(1,rows-1));
+        stack.forEach((u,i)=>{
+          const row=Math.floor(i/3),columns=Math.min(3,stack.length-row*3);
+          u.offsetX=(i%3-(columns-1)/2)*6;
+          u.offsetY=(row-(rows-1)/2)*rowSpacing;
+          const before=old.get(u.id),pos=before&&duration?visualPosition(before,now):null;
+          u.fromX=pos?.x??u.x;
+          u.fromY=pos?.y??u.y;
+          u.fromOffsetX=pos?.offsetX??u.offsetX;
+          u.fromOffsetY=pos?.offsetY??u.offsetY;
+          u.distance=Math.hypot(u.x-u.fromX,u.y-u.fromY);
+          u.stepDistance=pos?.stepDistance??0;
+          const dx=before?u.x-before.x:0;
+          u.facing=u.facing??(Math.abs(dx)>.015?Math.sign(dx):(before?.facing??(u.owner===0?1:-1)));
+          u.receivedAt=now;
+          u.duration=pos?duration:0;
+        });
+      }
+      next.receivedAt=now;
+      state=next;
+    }
+    function visualPosition(u,now){
+      const p=u.duration?Math.max(0,Math.min(1,(now-u.receivedAt)/u.duration)):1;
+      return {
+        x:u.fromX+(u.x-u.fromX)*p,
+        y:u.fromY+(u.y-u.fromY)*p,
+        offsetX:u.fromOffsetX+(u.offsetX-u.fromOffsetX)*p,
+        offsetY:u.fromOffsetY+(u.offsetY-u.fromOffsetY)*p,
+        stepDistance:(u.stepDistance+u.distance*p)%STRIDE,
+        walking:p<1&&u.distance>.005
+      };
+    }
     function tileState(x,y){if(!state||x<0||y<0||x>=SIZE||y>=SIZE)return null;return state.tiles[y*SIZE+x]}
     function ownSelected(){return state?.units.filter(u=>selected.has(u.id)&&u.owner===slot)||[]}
     function pointUnit(x,y){if(!state)return null;return state.units.filter(u=>Math.hypot(u.x-(x+.5),u.y-(y+.5))<.68).sort((a,b)=>Math.hypot(a.x-x-.5,a.y-y-.5)-Math.hypot(b.x-x-.5,b.y-y-.5))[0]||null}
@@ -124,62 +619,349 @@
       if(attackMode){command('attack',{x:t.x,y:t.y});attackMode=false;$('attackMode').classList.remove('active');return;}
       command('move',{x:t.x,y:t.y});
     });
-    window.addEventListener('keydown',e=>{if(/INPUT/.test(e.target.tagName))return;if(e.key==='Escape'){pendingBuild=null;attackMode=false;$('attackMode').classList.remove('active');selected.clear();selectedTile=null;renderUI()}else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)){keys.add(e.key.toLowerCase());if(e.key===' '||e.key.startsWith('Arrow'))e.preventDefault()}});
+    window.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&!guide.classList.contains('hidden')){closeGuide();return;}
+      if($('game').inert||event.target.matches('input,textarea,[contenteditable]'))return;
+      if(event.key==='Escape'){
+        if(gameMenu.open||battleLog.open){
+          const panel=gameMenu.open?gameMenu:battleLog;
+          panel.open=false;panel.querySelector('summary').focus();return;
+        }
+        pendingBuild=null;attackMode=false;selected.clear();selectedTile=null;renderUI();
+      }else if(['w','a','s','d','ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(event.key)){
+        if(event.target.closest('button,summary,.res-card'))return;
+        keys.add(event.key.toLowerCase());
+        if(event.key===' '||event.key.startsWith('Arrow'))event.preventDefault();
+      }
+    });
     window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());window.addEventListener('resize',resize);
     function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;let vx=0,vy=0;if(keys.has('w')||keys.has('arrowup'))vy--;if(keys.has('s')||keys.has('arrowdown'))vy++;if(keys.has('a')||keys.has('arrowleft'))vx--;if(keys.has('d')||keys.has('arrowright'))vx++;if(vx||vy){camera.x+=vx*dt*9/camera.zoom;camera.y+=vy*dt*9/camera.zoom;clampCamera()}draw();requestAnimationFrame(loop)}
-    function renderUI(){if(!state)return;$('food').textContent=Math.floor(state.resources.food);$('wood').textContent=Math.floor(state.resources.wood);$('stone').textContent=Math.floor(state.resources.stone);$('gold').textContent=Math.floor(state.resources.gold);$('timer').textContent=formatTime(state.elapsed);$('roomCodeTop').textContent=room||state.room||'—';$('ownBaseHp').textContent=Math.ceil(state.ownBaseHp||0);$('enemyBaseHp').textContent=state.enemyBaseVisible?Math.ceil(state.enemyBaseHp||0):'未偵察';$('playerLabel').textContent=`${state.ownName}　VS　${state.enemyName}${roomAi?'（AI）':''}`;$('serverHint').textContent=state.ended?'對局已結束':'伺服器權威同步';
-      const us=ownSelected();$('selectionCount').textContent=us.length?`選取 ${us.length} 支單位`:'未選取單位';$('unitList').innerHTML=us.map(u=>`<button class="unit-chip selected" data-id="${u.id}">${U[u.type].name} ${Math.ceil(u.hp)} HP</button>`).join('')||'<span class="note">點選我方單位，Shift 點選可加入隊伍。</span>';$('unitList').querySelectorAll('[data-id]').forEach(b=>b.onclick=()=>{selected.delete(b.dataset.id);renderUI()});
-      const body=$('contextBody'),title=$('contextName'),sub=$('contextSub');body.innerHTML='';let tile=selectedTile?tileState(selectedTile.x,selectedTile.y):null;
-      if(us.length){const counts={};us.forEach(u=>counts[u.type]=(counts[u.type]||0)+1);title.textContent=us.length===1?U[us[0].type].name:`部隊編組 ×${us.length}`;sub.textContent=Object.entries(counts).map(([k,v])=>`${U[k].name} ${v}`).join(' · ');const hp=us.reduce((a,u)=>a+u.hp,0),mx=us.reduce((a,u)=>a+u.maxHp,0);body.innerHTML=`<div class="stat"><label>隊伍生命</label><strong>${Math.ceil(hp)} / ${mx}</strong><div class="bar"><i style="width:${hp/mx*100}%"></i></div></div><div class="stat"><label>目前命令</label><strong>${us[0].order?.kind==='gather'?'採集':us[0].order?.kind==='attack'?'攻擊目標':us[0].order?.kind==='build'?'施工':us.some(u=>u.moving)?'移動中':'待命'}</strong></div>`;}
-      else if(tile&&!tile.unseen){const b=tile&&state.buildings?.find(x=>x.x===tile.x&&x.y===tile.y)||tile.building;title.textContent=b?B[b.type]?.name||'建築':tile.resource?RES[tile.resource]+'資源格':tile.terrain==='water'?'水域':'土地情報';sub.textContent=`座標 ${tile.x+1}, ${tile.y+1} · ${tile.visible?'目前可見':'最後情報'}`;const owner=tile.owner<0?'中立':tile.owner===slot?'我方':'敵方';body.innerHTML=`<div class="stat"><label>土地歸屬</label><strong>${owner}</strong></div><div class="stat"><label>土地耐久</label><strong>${Math.ceil(tile.hp||0)} / ${tile.maxHp||120}</strong></div>${tile.resource?`<div class="stat"><label>${RES[tile.resource]}存量</label><strong>${Math.floor(tile.amount||0)}</strong></div>`:''}${b?`<div class="stat"><label>${b.underConstruction?'施工進度':'建築耐久'}</label><strong>${b.underConstruction?`${Math.floor((b.progress||0)/(b.buildTime||10)*100)}%`:`${Math.ceil(b.hp)} / ${b.maxHp}`}</strong><div class="bar"><i style="width:${b.underConstruction?Math.min(100,(b.progress||0)/(b.buildTime||10)*100):b.hp/b.maxHp*100}%"></i></div></div>`:''}`;}
-      else{title.textContent='選取部隊或土地';sub.textContent='戰場情報受戰爭迷霧限制';body.innerHTML='<div class="stat"><label>視野規則</label><strong>已探索地形會保留記憶</strong></div><div class="stat"><label>勝利條件</label><strong>摧毀敵方主基地</strong></div>';}
-      renderBuildActions(us);renderTrainActions(tile);if(state.logs){const key=state.logs.map(x=>x.at+':'+x.text).join('|');if(key!==lastLogKey){$('logs').innerHTML=state.logs.slice(0,8).map(x=>`<div class="log-row"><time>${formatTime(x.at)}</time>${esc(x.text)}</div>`).join('');lastLogKey=key;}}
+    function unitIcon(type){return `<span class="unit-icon" aria-hidden="true" style="--unit-row:${UNIT_ROWS[type]*25}%"></span>`;}
+    function buildingIcon(type){
+      const sprite=BUILDING_SPRITES[type];
+      return `<span class="building-icon" aria-hidden="true" style="--sprite-x:${(sprite%3)*50}%;--sprite-y:${Math.floor(sprite/3)*100}%"></span>`;
+    }
+    function renderUI(){
+      if(!state)return;
+      for(const resource of Object.keys(RES))$(resource).textContent=Math.floor(state.resources[resource]);
+      $('timer').textContent=formatTime(state.elapsed);
+      $('roomCodeTop').textContent=room||state.room||'—';
+      $('ownBaseHp').textContent=Math.ceil(state.ownBaseHp||0);
+      $('enemyBaseHp').textContent=state.enemyBaseVisible?Math.ceil(state.enemyBaseHp||0):'未偵察';
+      $('playerLabel').textContent=`${state.ownName}　VS　${state.enemyName}${roomAi?'（AI）':''}`;
+      $('serverHint').textContent=state.ended?'對局已結束':ws?.readyState===1?'對局同步中':'正在重新連線';
+
+      const units=ownSelected(),hasUnits=units.length>0;
+      const hasVillager=units.some(u=>u.type==='villager');
+      if(!hasVillager)pendingBuild=null;
+      if(!hasUnits)attackMode=false;
+      const tile=selectedTile?tileState(selectedTile.x,selectedTile.y):null;
+      const building=tile&&(state.buildings?.find(b=>b.x===tile.x&&b.y===tile.y)||tile.building);
+      $('commandDock').hidden=!hasUnits&&(!tile||tile.unseen);
+      $('unitActions').hidden=!hasUnits;
+      $('buildActions').hidden=!hasVillager;
+      $('contextIcon').classList.toggle('unit-icon',hasUnits);
+      if(hasUnits)$('contextIcon').style.setProperty('--unit-row',`${UNIT_ROWS[units[0].type]*25}%`);
+      for(const button of stanceButtons){
+        const active=hasUnits&&units.every(u=>u.stance===button.dataset.stance);
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-pressed',active);
+      }
+      $('attackMode').setAttribute('aria-pressed',attackMode);
+      $('attackMode').classList.toggle('active',attackMode);
+      for(const button of $('buildButtons').children){
+        const active=button.dataset.building===pendingBuild;
+        button.classList.toggle('active',active);
+        button.setAttribute('aria-pressed',active);
+      }
+      renderUnitList(units);
+      renderTrainActions(tile,building);
+      if(hasUnits){
+        const hp=units.reduce((total,u)=>total+u.hp,0),maxHp=units.reduce((total,u)=>total+u.maxHp,0);
+        const active=units[0].order?.kind;
+        const summary=active==='gather'?'採集':active==='attack'?'交戰':active==='build'?'施工':units.some(u=>u.moving)?'移動中':'待命';
+        $('contextName').textContent=units.length===1?U[units[0].type].name:`部隊 ×${units.length}`;
+        $('contextSub').textContent=pendingBuild?'選取施工位置':attackMode?'右鍵指定攻擊目標':summary;
+        $('contextBody').innerHTML=`<div class="stat"><label>生命值</label><strong>${Math.ceil(hp)} / ${maxHp}</strong><div class="bar"><i style="width:${hp/maxHp*100}%"></i></div></div>`;
+      }else if(tile&&!tile.unseen){
+        const owner=tile.owner<0?'中立':tile.owner===slot?'我方':'敵方';
+        $('contextName').textContent=building?B[building.type].name:tile.resource?`${RES[tile.resource]}資源格`:tile.terrain==='water'?'水域':'土地';
+        $('contextSub').textContent=`${owner} · ${tile.x+1}, ${tile.y+1}${tile.remembered?' · 最後情報':''}`;
+        const terrain=`<div class="stat"><label>土地耐久</label><strong>${Math.ceil(tile.hp||0)} / ${tile.maxHp||120}</strong></div>`;
+        const resource=tile.resource?`<div class="stat"><label>剩餘資源</label><strong>${Math.floor(tile.amount||0)}</strong></div>`:'';
+        const structure=building?`<div class="stat"><label>${building.underConstruction?'施工進度':'建築耐久'}</label><strong>${building.underConstruction?`${Math.floor(building.progress/building.buildTime*100)}%`:`${Math.ceil(building.hp)} / ${building.maxHp}`}</strong></div>`:'';
+        $('contextBody').innerHTML=terrain+resource+structure;
+      }
+      if(state.logs){
+        const key=state.logs.map(log=>log.at+':'+log.text).join('|');
+        if(key!==lastLogKey){
+          $('logs').innerHTML=state.logs.slice(0,8).map(log=>`<div class="log-row"><time>${formatTime(log.at)}</time>${esc(log.text)}</div>`).join('');
+          lastLogKey=key;
+        }
+      }
       draw();
     }
-    function renderBuildActions(us){const holder=$('buildButtons'),villagers=us.filter(u=>u.type==='villager');holder.innerHTML='';const builds=[['barracks','兵營','木100 石35'],['tower','防禦塔','木42 石58'],['farm','農場','木52'],['gather','採集站','木45 石18']];for(const [type,label,cost]of builds){const b=document.createElement('button');b.className='game-button'+(pendingBuild===type?' active':'');b.textContent=label;b.innerHTML=`${label}<em>${cost} · ${BUILDING_TIME[type]}秒施工</em>`;b.disabled=!villagers.length||!state||state.ended;b.onclick=()=>{pendingBuild=type;attackMode=false;$('attackMode').classList.remove('active');showToast(`選取施工位置：${label}`);renderUI()};holder.appendChild(b)} }
-    const BUILDING_TIME={barracks:12,tower:11,farm:9,gather:9};
-    function renderTrainActions(tile){const h=$('trainButtons');h.innerHTML='';const b=tile&&state.buildings?.find(x=>x.x===tile.x&&x.y===tile.y)||tile?.building;if(!b||b.owner!==slot){$('queueInfo').textContent='選取主基地可訓練村民；兵營可生產作戰單位。';return}const units=b.type==='base'?[['villager','村民','糧45 · 13秒']]:b.type==='barracks'?[['sword','劍士','糧55 木15 · 12秒'],['archer','弓箭手','糧45 木28 · 14秒'],['pike','長槍兵','糧55 木20 · 13秒'],['siege','攻城車','木70 石55 金20 · 27秒']]:[];for(const [type,label,cost]of units){const btn=document.createElement('button');btn.className='game-button';btn.innerHTML=`${label}<em>${cost}</em>`;btn.disabled=!!b.underConstruction;btn.onclick=()=>send('command',{command:{action:'train',unit:type,x:tile.x,y:tile.y}});h.appendChild(btn)}$('queueInfo').textContent=b.underConstruction?'施工中…':b.queue?.length?`生產佇列：${b.queue.map(q=>`${U[q.unit].name} ${Math.ceil(q.remaining)}秒`).join('、')}`:'佇列待命。';}
+    function renderUnitList(units){
+      const list=$('unitList');
+      const ids=units.map(u=>u.id).join(',');
+      if(list.dataset.units!==ids){
+        list.dataset.units=ids;
+        list.replaceChildren(...units.map(u=>{
+          const button=document.createElement('button');
+          button.className='unit-chip';
+          button.innerHTML=`${unitIcon(u.type)}<span></span>`;
+          button.title='取消選取';
+          button.onclick=()=>{selected.delete(u.id);renderUI()};
+          return button;
+        }));
+      }
+      units.forEach((u,i)=>{
+        const label=`${U[u.type].name} ${Math.ceil(u.hp)} HP`;
+        const button=list.children[i];
+        if(button.lastElementChild.textContent!==label)button.lastElementChild.textContent=label;
+      });
+    }
+    function setupBuildActions(){
+      const builds=[['barracks','木100 石35',12],['tower','木42 石58',11],['farm','木52',9],['gather','木45 石18',9]];
+      for(const [type,cost,time] of builds){
+        const button=document.createElement('button');
+        button.className='game-button';
+        button.dataset.building=type;
+        button.innerHTML=`${buildingIcon(type)}${B[type].name}<em>${cost} · ${time}秒</em>`;
+        button.onclick=()=>{
+          pendingBuild=pendingBuild===type?null:type;
+          attackMode=false;
+          $('attackMode').classList.remove('active');
+          if(pendingBuild)showToast(`選取施工位置：${B[type].name}`);
+          renderUI();
+        };
+        $('buildButtons').appendChild(button);
+      }
+    }
+    const TRAINING={
+      base:[['villager','糧45 · 13秒']],
+      barracks:[['sword','糧55 木15 · 12秒'],['archer','糧45 木28 · 14秒'],['pike','糧55 木20 · 13秒'],['siege','木70 石55 金20 · 27秒']]
+    };
+    function renderTrainActions(tile,building){
+      const canTrain=building?.owner===slot&&TRAINING[building.type];
+      $('trainActions').hidden=!canTrain;
+      const holder=$('trainButtons'),key=canTrain?`${tile.x},${tile.y},${building.type}`:'';
+      if(holder.dataset.target!==key){
+        holder.dataset.target=key;
+        holder.replaceChildren(...(canTrain||[]).map(([type,cost])=>{
+          const button=document.createElement('button');
+          button.className='game-button';
+          button.innerHTML=`${unitIcon(type)}${U[type].name}<em>${cost}</em>`;
+          button.onclick=()=>send('command',{command:{action:'train',unit:type,x:tile.x,y:tile.y}});
+          return button;
+        }));
+      }
+      if(!canTrain)return;
+      for(const button of holder.children)button.disabled=!!building.underConstruction;
+      const queue=building.queue??[];
+      $('queueInfo').textContent=building.underConstruction?'施工中':queue.length?`生產中 · ${queue.map(q=>`${U[q.unit].name} ${Math.ceil(q.remaining)}秒`).join('、')}`:'';
+    }
+
     function formatTime(s){s=Math.floor(s||0);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
     function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
     function px(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
-    function drawTerrain(t){const x=t.x*TILE,y=t.y*TILE,v=t.variation||0;const base={grass:['#496c4b','#4c704d','#456847','#52734f'],forest:['#315841','#355d42','#30543d','#3b6243'],stone:['#666c63','#71756a','#626b64','#7b786c'],gold:['#75694c','#806f4b','#706347','#82714c'],berry:['#657447','#6c7949','#5f7147','#6e7944'],water:['#345d69','#386573','#315866','#3a6873']}[t.terrain]||'#26343a';px(x,y,TILE,TILE,base[v]);
-      if(t.terrain==='grass'){px(x+4+(v*3)%15,y+5+(v*5)%17,2,2,'#78905d');px(x+16-(v*2),y+18+(v%2)*3,2,2,'#314f42');if((t.x+t.y)%7===0)px(x+21,y+4,2,2,'#7f915d')}
-      if(t.terrain==='forest'){px(x+9,y+15,10,9,'#4b4934');px(x+6,y+8,16,10,'#1f4636');px(x+9,y+4,10,8,'#28533b');px(x+12,y+1,5,6,'#356448');px(x+11,y+21,6,4,'#806744')}
-      if(t.terrain==='stone'){px(x+5,y+14,8,7,'#9a9c8b');px(x+10,y+8,10,11,'#858c80');px(x+16,y+15,7,7,'#b3a990');px(x+13,y+11,3,2,'#d1c7a5')}
-      if(t.terrain==='gold'){px(x+5,y+15,18,7,'#5c5541');px(x+8,y+10,4,5,'#e8cb74');px(x+15,y+7,5,6,'#f0d881');px(x+17,y+16,4,3,'#d8ae58');px(x+7,y+18,3,2,'#c99b4c')}
-      if(t.terrain==='berry'){px(x+4,y+16,20,7,'#344d38');for(const [dx,dy]of [[7,11],[14,8],[19,13],[10,18],[17,20]]){px(x+dx,y+dy,3,3,'#cf6b58');px(x+dx,y+dy,1,1,'#f1c17b')}}
-      if(t.terrain==='water'){px(x,y+6,TILE,2,'#598390');px(x+3,y+15,9,2,'#65939a');px(x+16,y+21,8,2,'#55838b');px(x+9,y+10,5,1,'#7ba09a')}
-      if(t.resource&&t.amount<=0){px(x+4,y+4,TILE-8,TILE-8,base[v]);px(x+7,y+7,3,3,'#746d58');}
-      if(t.owner===slot)px(x,y,2,TILE,'#65d8c6');else if(t.owner>=0)px(x+TILE-2,y,2,TILE,'#f07b6c');
-      if(t.owner===slot)px(x,y,TILE,2,'#65d8c6');else if(t.owner>=0)px(x,y+TILE-2,TILE,2,'#f07b6c');
-      ctx.strokeStyle='#13221f66';ctx.lineWidth=1/camera.zoom;ctx.strokeRect(x,y,TILE,TILE);
-      if(!t.visible){px(x,y,TILE,TILE,'rgba(13,20,25,.52)')}
+
+    function drawSea(){
+      const halfW=viewW/(2*camera.zoom*TILE),halfH=viewH/(2*camera.zoom*TILE);
+      const left=Math.floor((camera.x-halfW)/3)*3,right=Math.ceil(camera.x+halfW);
+      const top=Math.floor(camera.y-halfH),bottom=Math.ceil(camera.y+halfH);
+      px(left*TILE,top*TILE,(right-left)*TILE,(bottom-top)*TILE,'#2b6182');
+      for(let row=top;row<bottom;row++){
+        for(let col=left;col<right;col+=3){
+          drawWaterMark(col*TILE,row*TILE,((row*31+col*7)%29+29)%29);
+        }
+      }
     }
-    function drawBuilding(b,x,y,owner){const c=COLORS[owner],dark=owner===slot?'#246b66':'#88473f',stone='#a4a38a',light='#d6c88f';
-      if(b.type==='base'){px(x+4,y+10,20,15,'#383b3a');px(x+7,y+6,14,16,stone);px(x+10,y+2,8,9,light);px(x+12,y+13,4,9,'#3f342a');px(x+5,y+23,18,3,c);px(x+8,y+8,3,3,c);px(x+18,y+8,3,3,c)}
-      if(b.type==='barracks'){px(x+4,y+13,20,13,'#55473a');px(x+3,y+8,22,7,dark);px(x+8,y+4,12,5,c);px(x+8,y+17,4,8,'#d4b76d');px(x+17,y+17,4,4,light)}
-      if(b.type==='tower'){px(x+7,y+8,14,18,stone);px(x+4,y+5,20,6,dark);px(x+9,y+2,10,5,c);px(x+12,y+14,4,4,'#5d5141');px(x+9,y+24,10,3,'#444a43')}
-      if(b.type==='farm'){px(x+3,y+9,22,16,'#5c5237');for(let i=0;i<4;i++){px(x+5+i*5,y+11,2,12,'#947649');px(x+4+i*5,y+14,4,2,'#a6bd68')}}
-      if(b.type==='gather'){px(x+4,y+12,20,13,'#625b48');px(x+7,y+7,14,8,'#a29a77');px(x+10,y+15,8,9,'#4a473a');px(x+13,y+6,3,4,c)}
-      px(x+4,y+26,20,2,c);
-      if(b.underConstruction){px(x+1,y+1,26,2,'#f1d280');px(x+1,y+1,2,26,'#f1d280')}
-      else{const pct=Math.max(0,b.underConstruction?(b.progress||0)/(b.buildTime||10):b.hp/b.maxHp);px(x+4,y+1,20,2,'#273433');px(x+4,y+1,20*Math.min(1,pct),2,b.underConstruction?'#f0ca72':'#b9d17a')}
+    function drawWaterMark(x,y,seed){
+      px(x+seed%16,y+5+seed%12,7,2,'#487f9a');
+      px(x+3+seed%16,y+7+seed%12,9,1,'#346e8c');
+      px(x+15,y+22,5,1,'#234e75');
     }
-    function drawUnit(u,offsetX=0,offsetY=0){const x=u.x*TILE,y=u.y*TILE,team=COLORS[u.owner],d=U[u.type],picked=selected.has(u.id),s=2.15;const patterns=d.patterns;
-      if(picked){ctx.beginPath();ctx.arc(x,y,d.range*TILE,0,Math.PI*2);ctx.fillStyle=u.owner===slot?'rgba(101,216,198,.07)':'rgba(240,123,108,.05)';ctx.fill();ctx.strokeStyle=team;ctx.lineWidth=1.3/camera.zoom;ctx.setLineDash([3/camera.zoom,3/camera.zoom]);ctx.stroke();ctx.setLineDash([])}
-      px(x-10+offsetX,y-8+offsetY,20,18,'#1a2527');px(x-9+offsetX,y-7+offsetY,18,16,team);px(x-6+offsetX,y-5+offsetY,12,11,'#344a43');
-      for(let yy=0;yy<patterns.length;yy++)for(let xx=0;xx<patterns[yy].length;xx++)if(patterns[yy][xx]==='1')px(x-7+offsetX+xx*s,y-6+offsetY+yy*s,s,s,yy<2?'#efd78b':'#e7e4d0');
-      px(x-11+offsetX,y-13+offsetY,22,3,'#202c2c');px(x-10+offsetX,y-12+offsetY,20*Math.max(0,u.hp/u.maxHp),1.5,u.hp/u.maxHp>.45?'#9fd77e':'#ed796c');
-      if(picked){ctx.strokeStyle='#f2d27c';ctx.lineWidth=1.5/camera.zoom;ctx.strokeRect(x-12+offsetX,y-14+offsetY,24,34)}
+    function drawTerrain(t){
+      const x=t.x*TILE,y=t.y*TILE,seed=(t.x*17+t.y*31)%29,variant=seed%4;
+      px(x,y,TILE,TILE,(TERRAIN_COLORS[t.terrain]||TERRAIN_COLORS.grass)[variant]);
+      if(t.terrain==='water'){
+        drawWaterMark(x,y,seed);
+      }else{
+        const grass=t.terrain==='grass'||t.terrain==='forest'||t.terrain==='berry';
+        for(let i=0;i<4;i++){
+          const ox=(seed+i*11)%23+2,oy=(seed*2+i*7)%23+2;
+          px(x+ox,y+oy,3,1,grass?'#66944f':'#72766b');
+          px(x+ox+1,y+oy-1,1,1,grass?'#acc875':'#b5ab8a');
+        }
+        if(t.terrain==='grass'&&seed%6===0){
+          px(x+6,y+9,1,4,'#4b7c49');
+          px(x+5,y+8,3,2,'#f3d486');
+        }
+      }
+      if(t.owner>=0){
+        ctx.globalAlpha=.13;px(x,y,TILE,TILE,COLORS[t.owner]);ctx.globalAlpha=1;
+        px(x+2,y+TILE-2,TILE-4,2,COLORS[t.owner]);
+        px(x+2,y+2,4,2,COLORS[t.owner]);
+        px(x+TILE-6,y+2,4,2,COLORS[t.owner]);
+      }
     }
-    function draw(){if(!canvas.width||!state)return;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.setTransform(dpr*camera.zoom,0,0,dpr*camera.zoom,dpr*(viewW/2-camera.x*TILE*camera.zoom),dpr*(viewH/2-camera.y*TILE*camera.zoom));
-      for(const t of state.tiles){if(t.unseen){const x=t.x*TILE,y=t.y*TILE;px(x,y,TILE,TILE,'#101920');px(x+5,y+6,3,2,'#1a272b');px(x+18,y+18,2,3,'#172429');continue}drawTerrain(t);if(t.building)drawBuilding(t.building,t.x*TILE,t.y*TILE,t.building.owner);if(t.remembered){px(t.x*TILE,t.y*TILE,TILE,TILE,'rgba(8,13,19,.56)')}}
-      const stacks={},now=performance.now();for(const raw of state.units){const pos=visualPosition(raw,now),u={...raw,x:pos.x,y:pos.y};const key=`${Math.floor(u.x)},${Math.floor(u.y)},${u.owner}`;(stacks[key]??=[]).push(u)}for(const arr of Object.values(stacks))arr.forEach((u,i)=>drawUnit(u,arr.length>1?((i%3)-1)*7:0,arr.length>1?(Math.floor(i/3)-.5)*6:0));
-      if(selectedTile){const x=selectedTile.x*TILE,y=selectedTile.y*TILE;ctx.strokeStyle='#f1d17e';ctx.lineWidth=2/camera.zoom;ctx.setLineDash([3/camera.zoom,2/camera.zoom]);ctx.strokeRect(x+1,y+1,TILE-2,TILE-2);ctx.setLineDash([])}
-      if(drag?.select&&drag.moved){const r=canvas.getBoundingClientRect(),x1=drag.x-r.left,y1=drag.y-r.top,x2=(drag.currentX||drag.x)-r.left,y2=(drag.currentY||drag.y)-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.strokeStyle='#f4d485';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));ctx.setLineDash([])}
+    function drawFogTile(t){
+      const x=t.x*TILE,y=t.y*TILE,seed=(t.x*5+t.y*11)%13;
+      px(x,y,TILE,TILE,'#25374a');
+      px(x+4+seed,y+7,4,2,'#2b4051');
+      px(x+16-seed%6,y+19,3,2,'#2a3d50');
     }
-    resize();connect();requestAnimationFrame(loop);
+    function neighborWater(x,y){if(x<0||y<0||x>=SIZE||y>=SIZE)return true;return state.tiles[y*SIZE+x]?.terrain==='water'}
+    function drawShorelines(){
+      const edges=[[0,-1,0,0,28,2],[0,1,0,26,28,2],[-1,0,0,0,2,28],[1,0,26,0,2,28]];
+      for(const t of state.tiles){
+        if(t.unseen||t.terrain==='water')continue;
+        for(const [dx,dy,ox,oy,w,h] of edges){
+          if(!neighborWater(t.x+dx,t.y+dy))continue;
+          const x=t.x*TILE+ox,y=t.y*TILE+oy;
+          px(x+dx*2,y+dy*2,w,h,'#65a9aa');
+          px(x,y,w,h,'#d4c48b');
+        }
+      }
+    }
+    function drawAtlasSprite(image,index,x,y,w,h,columns,rows){
+      if(!image.complete||!image.naturalWidth)return false;
+      const cellW=image.naturalWidth/columns,cellH=image.naturalHeight/rows;
+      ctx.drawImage(image,(index%columns)*cellW,Math.floor(index/columns)*cellH,cellW,cellH,x,y,w,h);
+      return true;
+    }
+    function drawResource(t){
+      const x=t.x*TILE+14,y=t.y*TILE+25,forest=t.terrain==='forest';
+      if(t.amount<=0){
+        px(x-5,y-4,9,4,forest?'#6a573b':'#657065');
+        px(x-3,y-5,5,2,forest?'#b58b58':'#9a9983');
+        return;
+      }
+      const size=forest?38:24;
+      const sprite=forest?(t.x*5+t.y*7)%3:{stone:3,gold:4,berry:5}[t.terrain];
+      px(x-size*.3,y-3,size*.6,3,'rgba(37,49,43,.27)');
+      drawAtlasSprite(terrainAtlas,sprite,x-size/2,y-size*.875,size,size,3,2);
+    }
+    function drawBuilding(b,x,y,owner){
+      const team=COLORS[owner],construction=b.underConstruction;
+      const sprite=construction?5:BUILDING_SPRITES[b.type];
+      const size={base:56,barracks:46,tower:47,farm:41,gather:40}[b.type];
+      const left=x+(TILE-size)/2,top=y+TILE-2-size*.875;
+      drawAtlasSprite(buildingAtlas,sprite,left,top,size,size,3,2);
+      px(x+TILE/2-4,top+3,8,3,team);
+      if(construction||b.hp<b.maxHp){
+        const progress=construction?b.progress/b.buildTime:b.hp/b.maxHp;
+        px(x+3,top-2,TILE-6,3,'#262b3e');
+        px(x+4,top-1,(TILE-8)*Math.max(0,Math.min(1,progress)),1,construction?'#efca83':team);
+      }
+    }
+    function unitPose(u,pos,clock){
+      const attackAge=clock-(u.strike?.at??-Infinity),hitAge=clock-(u.hit??-Infinity);
+      const facing=u.strike?.facing??u.facing;
+      if(hitAge>=0&&hitAge<.23&&u.hit>=(u.strike?.at??-Infinity)){
+        return {frame:u.type==='villager'?8:7,facing:u.facing,jolt:-1};
+      }
+      if(attackAge>=0&&attackAge<.38){
+        const frame=4+Math.min(2,Math.floor(attackAge/.12));
+        return {frame,facing,jolt:u.type==='siege'&&frame===5?-2:0};
+      }
+      if(pos.walking||(u.moving&&u.distance>.005&&!state.ended)){
+        const frames=u.type==='siege'?CART_FRAMES:WALK_FRAMES;
+        return {frame:frames[Math.floor(pos.stepDistance/STRIDE*frames.length)],facing:u.facing,jolt:0};
+      }
+      if(u.work){
+        const frames=WORK_FRAMES[u.work==='build'?'build':u.workResource]??WORK_FRAMES.mineral;
+        return {frame:frames[Math.floor(clock*7)%frames.length],facing:u.facing,jolt:0};
+      }
+      const guarding=u.stance==='hold'&&u.type!=='villager'&&u.type!=='siege';
+      return {frame:guarding?1:0,facing:u.facing,jolt:0};
+    }
+    function drawUnitSprite(type,frame,x,y,facing){
+      ctx.save();
+      ctx.translate(Math.round(x),Math.round(y));
+      ctx.scale(facing,1);
+      drawAtlasSprite(unitAtlas,UNIT_ROWS[type]*13+frame,-20,-32,40,40,13,5);
+      ctx.restore();
+    }
+    function drawUnit(u,pos,clock){
+      const x=pos.x*TILE+pos.offsetX,y=pos.y*TILE+pos.offsetY,team=COLORS[u.owner],picked=selected.has(u.id);
+      const siege=u.type==='siege',pose=unitPose(u,pos,clock);
+      if(picked){
+        ctx.beginPath();ctx.arc(x,y,U[u.type].range*TILE,0,Math.PI*2);
+        ctx.strokeStyle=u.owner===slot?'rgba(101,239,220,.28)':'rgba(255,135,157,.25)';
+        ctx.lineWidth=1/camera.zoom;ctx.stroke();
+      }
+      ctx.beginPath();ctx.ellipse(x,y+3,siege?10:8,3.5,0,0,Math.PI*2);
+      ctx.fillStyle='rgba(33,40,57,.44)';ctx.fill();
+      if(picked){ctx.strokeStyle=team;ctx.lineWidth=1.5/camera.zoom;ctx.stroke();}
+      drawUnitSprite(u.type,pose.frame,x+pose.jolt*pose.facing,y+3,pose.facing);
+      const health=Math.max(0,u.hp/u.maxHp),hpY=y-27;
+      if(picked||health<1){
+        px(x-8,hpY,16,4,'#25273e');
+        px(x-7,hpY+1,14*health,2,health>.45?'#b7e388':'#fb7c89');
+      }
+      px(x-2,y+6,4,2,team);
+      if(u.work&&!pos.walking&&[5,7,10].includes(pose.frame)){
+        const spark=(clock*48)%5;
+        px(x+pose.facing*(9+spark),y-spark,2,2,u.work==='build'?'#ffe1a1':'#edc384');
+      }
+    }
+    function drawEffects(clock){
+      for(const e of state.effects||[]){
+        const age=clock-e.at;
+        if(age<0||age>=.75)continue;
+        const x=e.x*TILE,y=e.y*TILE;
+        if(e.kind==='defeat'){
+          ctx.globalAlpha=Math.min(1,(.75-age)/.23);
+          drawUnitSprite(e.type,e.type==='villager'?1:8,x,y+3,e.facing??(e.owner===0?1:-1));
+          ctx.globalAlpha=1;
+          continue;
+        }
+        const tx=e.tx*TILE,ty=e.ty*TILE-6;
+        const flight=e.kind==='impact'?0:e.kind==='shell'?.32:.25;
+        const launch=e.kind==='tower'?0:e.kind==='arrow'?.22:e.kind==='impact'?.11:.12;
+        if(age<launch)continue;
+        if(age<launch+flight){
+          const p=(age-launch)/flight,sy=y-(e.kind==='tower'?28:11);
+          const cx=x+(tx-x)*p,cy=sy+(ty-sy)*p-Math.sin(p*Math.PI)*(e.kind==='shell'?17:5);
+          const angle=Math.atan2(ty-sy,tx-x);
+          ctx.save();ctx.translate(Math.round(cx),Math.round(cy));ctx.rotate(angle);
+          if(e.kind==='shell'){
+            px(-4,-2,7,4,'#473345');px(-1,-2,4,3,'#ffe0a0');px(-7,-1,3,2,'#f6a568');
+          }else{
+            px(-5,-1,9,2,'#fff1bd');px(2,-2,3,4,'#a7e2e8');px(-6,-2,3,4,'#eea170');
+          }
+          ctx.restore();
+        }else{
+          const p=(age-launch-flight)/.17;
+          if(p>=1)continue;
+          const r=3+p*9;
+          ctx.globalAlpha=1-p;
+          px(tx-r,ty,2*r,2,'#ffe6a0');px(tx,ty-r,2,2*r,'#fff2cb');
+          px(tx+r*.65,ty-r*.65,2,2,'#ff9977');px(tx-r*.7,ty+r*.7,2,2,'#ff9977');
+          ctx.globalAlpha=1;
+        }
+      }
+    }
+
+    function draw(){if(!canvas.width||!state)return;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.setTransform(dpr*camera.zoom,0,0,dpr*camera.zoom,dpr*(viewW/2-camera.x*TILE*camera.zoom),dpr*(viewH/2-camera.y*TILE*camera.zoom));drawSea();
+      for(const t of state.tiles){if(t.unseen&&t.terrain!=='water'){drawFogTile(t);continue}drawTerrain(t)}
+      drawShorelines();
+      for(const t of state.tiles)if(!t.unseen&&['forest','stone','gold','berry'].includes(t.terrain))drawResource(t);
+      const buildings=state.tiles.filter(t=>!t.unseen&&t.building).sort((a,b)=>a.y-b.y||a.x-b.x);for(const t of buildings)drawBuilding(t.building,t.x*TILE,t.y*TILE,t.building.owner);
+      for(const t of state.tiles)if(t.remembered)px(t.x*TILE,t.y*TILE,TILE,TILE,'rgba(12,28,29,.34)');
+      const now=performance.now();
+      const units=state.units.map(u=>({u,pos:visualPosition(u,now)}));
+      units.sort((a,b)=>(a.pos.y-b.pos.y)*TILE+a.pos.offsetY-b.pos.offsetY);
+      const clock=state.elapsed+Math.max(0,(now-state.receivedAt)/1000);
+      for(const {u,pos} of units)drawUnit(u,pos,clock);
+      drawEffects(clock);
+      if(selectedTile){const x=selectedTile.x*TILE,y=selectedTile.y*TILE;ctx.strokeStyle='#fff0a5';ctx.lineWidth=2/camera.zoom;ctx.setLineDash([4/camera.zoom,3/camera.zoom]);ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);ctx.setLineDash([])}
+      if(drag?.select&&drag.moved){const r=canvas.getBoundingClientRect(),x1=drag.x-r.left,y1=drag.y-r.top,x2=(drag.currentX||drag.x)-r.left,y2=(drag.currentY||drag.y)-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.strokeStyle='#fff0a5';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));ctx.setLineDash([])}drawMinimap()
+    }
+    setupBuildActions();resize();connect();requestAnimationFrame(loop);
   })();
   </script>
 </body>

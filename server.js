@@ -1,4 +1,4 @@
-/* 界域爭鋒 V5.1 — dependency-free authoritative prototype server */
+/* 風起群島 V5.1 — dependency-free authoritative prototype server */
 'use strict';
 const http = require('node:http');
 const fs = require('node:fs');
@@ -38,6 +38,7 @@ function rngFor(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=a;t=Mat
 function idx(x,y){return y*SIZE+x;}
 function xy(i){return {x:i%SIZE,y:Math.floor(i/SIZE)};}
 function inside(x,y){return Number.isInteger(x)&&Number.isInteger(y)&&x>=0&&y>=0&&x<SIZE&&y<SIZE;}
+function insideIsland(x,y){const dx=(x+.5-SIZE/2)/(SIZE/2),dy=(y+.5-SIZE/2)/(SIZE/2);return dx**4+dy**4<=1;}
 function unitCount(g,p){return g.units.filter(u=>u.owner===p).length;}
 function makeUnit(g,owner,type,x,y){const d=UNIT[type];return{id:`u${nextUnit++}`,owner,type,x:x+.5,y:y+.5,hp:d.hp,maxHp:d.hp,order:null,path:[],stance:'aggressive',cooldown:0,think:0,selectedBy:0};}
 function makeBuilding(owner,type,x,y,complete=true){const d=BUILDING[type];return{id:`b${nextBuilding++}`,owner,type,x,y,hp:complete?d.hp:Math.ceil(d.hp*.25),maxHp:d.hp,underConstruction:!complete,progress:0,queue:[],cooldown:0};}
@@ -45,8 +46,8 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
   const rnd=rngFor(seed),tiles=Array(SIZE*SIZE);
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE/2;x++){
     const safe=(x<=5&&Math.abs(y-12)<=3);
-    let terrain='grass',resource=null,amount=0;
-    if(!safe&&!(x<=6&&y===12)){
+    const onIsland=insideIsland(x,y);let terrain=onIsland?'grass':'water',resource=null,amount=0;
+    if(onIsland&&!safe&&!(x<=6&&y===12)){
       const r=rnd();
       if(r<.095)terrain='water';
       else if(r<.22){terrain='forest';resource='wood';}
@@ -68,7 +69,7 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
     for(let y=10;y<=14;y++)for(let x=bx-2;x<=bx+2;x++)if(inside(x,y)){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}t.owner=p;}
     tiles[idx(bx,12)].building=makeBuilding(p,'base',bx,12,true);
   }
-  return {seed,tiles,players,units,elapsed:0,tick:0,ended:false,winner:-1,memories:[Array(SIZE*SIZE).fill(null),Array(SIZE*SIZE).fill(null)],visible:[new Set(),new Set()],ai:false,aiThink:0,log:[]};
+  return {seed,tiles,players,units,elapsed:0,tick:0,ended:false,winner:-1,memories:[Array(SIZE*SIZE).fill(null),Array(SIZE*SIZE).fill(null)],visible:[new Set(),new Set()],ai:false,aiThink:0,log:[],effects:[]};
 }
 // makeUnit can be called before a game object exists; ids are process-unique.
 
@@ -98,13 +99,19 @@ function visionFor(g,p){
 function updateVision(g){for(let p=0;p<2;p++){const vis=visionFor(g,p);for(const i of vis){const t=g.tiles[i];g.memories[p][i]={x:t.x,y:t.y,terrain:t.terrain,resource:t.resource,amount:t.amount,owner:t.owner,hp:t.hp,maxHp:t.maxHp,building:t.building?{id:t.building.id,type:t.building.type,owner:t.building.owner,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime}:null,seenAt:g.elapsed};}}}
 function serialize(g,p){
   updateVision(g);const vis=g.visible[p],mem=g.memories[p];
-  const tiles=mem.map((m,i)=>{if(!m)return{x:i%SIZE,y:Math.floor(i/SIZE),unseen:true};const current=vis.has(i);return{...m,visible:current,remembered:!current};});
-  const units=g.units.filter(u=>u.owner===p||vis.has(idx(Math.floor(u.x),Math.floor(u.y)))).map(u=>({id:u.id,owner:u.owner,type:u.type,x:u.x,y:u.y,hp:u.hp,maxHp:u.maxHp,stance:u.stance,moving:!!u.path?.length,order:u.owner===p&&u.order?{kind:u.order.kind,target:u.order.tile}:null}));
+  const tiles=mem.map((m,i)=>{if(!m){const x=i%SIZE,y=Math.floor(i/SIZE);return{x,y,unseen:true,terrain:insideIsland(x,y)?null:'water'};}const current=vis.has(i);return{...m,visible:current,remembered:!current};});
+  const sees=(x,y)=>vis.has(idx(Math.floor(x),Math.floor(y)));
+  const units=g.units.filter(u=>u.owner===p||sees(u.x,u.y)).map(u=>({
+    id:u.id,owner:u.owner,type:u.type,x:u.x,y:u.y,hp:u.hp,maxHp:u.maxHp,stance:u.stance,moving:!!u.path?.length,
+    work:u.work,workResource:u.workResource,facing:u.workFacing,strike:u.strike,hit:u.hit,
+    order:u.owner===p&&u.order?{kind:u.order.kind,target:u.order.tile}:null
+  }));
+  const effects=g.effects.filter(e=>(e.owner===p||sees(e.x,e.y))&&(e.tx===undefined||sees(e.tx,e.ty)));
   const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
   const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
-  return{type:'state',room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,buildings:ownBuildings,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  return{type:'state',room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,tiles,units,effects,buildings:ownBuildings,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -188,19 +195,30 @@ function pathToAttackRange(g,u,target,range){
   for(const i of candidates){const p=findPath(g,u.x,u.y,i);if(p&&p.length<bestLen){best=p;bestLen=p.length;}}
   if(best){u.path=best;u.order.lastTargetCell=ti;}else{u.path=[];}
 }
+function damageUnit(g,u,damage,facing){
+  u.hp-=damage;
+  u.hit=g.elapsed;
+  if(u.hp>0)return;
+  const {id,owner,type,x,y}=u;
+  g.effects.push({kind:'defeat',owner,type,x,y,facing,at:g.elapsed});
+  g.units=g.units.filter(unit=>unit.id!==id);
+  for(const attacker of g.units)if(attacker.order?.targetId===id)resumeOrStop(g,attacker);
+}
 function attackAndGather(g,dt){
   const vision=[g.visible[0],g.visible[1]];
-  for(const u of g.units){const d=UNIT[u.type];u.cooldown=Math.max(0,u.cooldown-dt);u.think-=dt;
+  for(const u of g.units){if(u.hp<=0)continue;const d=UNIT[u.type];u.cooldown=Math.max(0,u.cooldown-dt);u.think-=dt;
+    u.work=undefined;u.workResource=undefined;u.workFacing=undefined;
     if(u.order?.kind==='gather'){
       const t=g.tiles[u.order.tile];if(!t?.resource||t.amount<=0){u.order=null;continue;}
       const c=center(u.order.tile),station=adjacentIndices(u.order.tile).some(i=>g.tiles[i].building?.owner===u.owner&&g.tiles[i].building.type==='gather')||t.building?.owner===u.owner&&t.building.type==='gather';if(Math.hypot(u.x-c.x,u.y-c.y)>(station?1.22:.72))continue;
+      u.work='gather';u.workResource=t.resource;u.workFacing=Math.sign(c.x-u.x)||undefined;
       const gatherers=g.units.filter(x=>x.owner===u.owner&&x.order?.kind==='gather'&&x.order.tile===u.order.tile).length;
       const base=.78*(station?1.55:1)/(1+Math.max(0,gatherers-1)*.45),gained=Math.min(t.amount,base*dt);t.amount-=gained;g.players[u.owner].resources[t.resource]+=gained;
       continue;
     }
     if(u.order?.kind==='build'){
       const t=g.tiles[u.order.tile],b=t?.building;if(!b||b.id!==u.order.buildingId){u.order=null;u.path=[];continue;}if(!b.underConstruction){u.order=null;u.path=[];continue;}
-      const c=center(u.order.tile);if(Math.hypot(u.x-c.x,u.y-c.y)<.75&&u.path.length===0){b.progress+=dt;if(b.progress>=b.buildTime){b.underConstruction=false;b.hp=b.maxHp;u.order=null;addLog(g,`${g.players[u.owner].name}完成${BUILDING[b.type].name}。`,u.owner,idx(t.x,t.y));}}
+      const c=center(u.order.tile);if(Math.hypot(u.x-c.x,u.y-c.y)<.75&&u.path.length===0){u.work='build';u.workFacing=Math.sign(c.x-u.x)||undefined;b.progress+=dt;if(b.progress>=b.buildTime){b.underConstruction=false;b.hp=b.maxHp;u.order=null;addLog(g,`${g.players[u.owner].name}完成${BUILDING[b.type].name}。`,u.owner,idx(t.x,t.y));}}
       continue;
     }
     let target=null;
@@ -215,9 +233,13 @@ function attackAndGather(g,dt){
     if(u.order?.holdTarget&&distance>d.range){u.order=null;u.path=[];continue;}
     if(!inRange){pathToAttackRange(g,u,target,d.range);continue;}
     u.path=[];if(u.cooldown>0)continue;u.cooldown=d.interval;
+    const facing=Math.sign(tx-u.x)||undefined;
+    u.strike={at:g.elapsed,facing};
+    const kind=u.type==='archer'?'arrow':u.type==='siege'?'shell':'impact';
+    g.effects.push({kind,owner:u.owner,x:u.x,y:u.y,tx,ty,at:g.elapsed});
     if(target.kind==='unit'){
       let damage=d.damage;if(u.type==='pike'&&target.type==='siege')damage*=1.9;if(u.type==='sword'&&target.type==='archer')damage*=1.25;if(target.type==='siege'&&u.type!=='siege')damage*=1.2;
-      target.hp-=damage;if(target.hp<=0){const deadId=target.id;g.units=g.units.filter(x=>x.id!==deadId);for(const a of g.units)if(a.order?.targetId===deadId)resumeOrStop(g,a);}
+      damageUnit(g,target,damage,facing&&-facing);
     } else if(target.kind==='building'){
       let damage=d.siege?d.damage:d.damage*.5;if(target.building.type==='tower'&&u.type==='siege')damage*=1.35;target.building.hp-=damage;
       if(target.building.hp<=0){const ix=target.tile.y*SIZE+target.tile.x,isBase=target.building.type==='base';target.tile.building=null;for(const a of g.units)if(a.order?.targetId===target.building.id){if(!isBase&&adjacentIndices(ix).some(i=>g.tiles[i].owner===a.owner))a.order={kind:'attack',targetKind:'land',tile:ix,lastTargetCell:-1};else a.order=null;a.path=[];}addLog(g,`${g.players[u.owner].name}摧毀${BUILDING[target.building.type].name}。`,u.owner,ix);}
@@ -232,14 +254,19 @@ function tickBuildings(g,dt){
     if(b.underConstruction){const builders=g.units.filter(u=>u.owner===b.owner&&u.order?.kind==='build'&&u.order.buildingId===b.id).length;if(!builders&&b.progress>0)b.progress=Math.max(0,b.progress-dt*.2);continue;}
     if(b.type==='farm')g.players[b.owner].resources.food+=BUILDING.farm.foodRate*dt;
     if(b.queue?.length){const q=b.queue[0];q.remaining-=dt;if(q.remaining<=0){const candidates=[...adjacentIndices(idx(t.x,t.y)),idx(t.x,t.y)].filter(i=>passable(g,i));const spawn=candidates.length?center(candidates[0]):{x:t.x+.5,y:t.y+.5};g.units.push(makeUnit(g,b.owner,q.unit,Math.floor(spawn.x),Math.floor(spawn.y)));const u=g.units[g.units.length-1];u.x=spawn.x;u.y=spawn.y;b.queue.shift();}}
-    if(b.type==='tower'){b.cooldown=Math.max(0,b.cooldown-dt);if(b.cooldown<=0){const enemy=g.units.filter(u=>u.owner!==b.owner&&g.visible[b.owner].has(idx(Math.floor(u.x),Math.floor(u.y)))&&Math.hypot(u.x-(t.x+.5),u.y-(t.y+.5))<=BUILDING.tower.range&&lineOfSight(g,{x:t.x+.5,y:t.y+.5},u)).sort((a,c)=>a.hp-c.hp)[0];if(enemy){enemy.hp-=BUILDING.tower.damage;b.cooldown=BUILDING.tower.interval;if(enemy.hp<=0){const deadId=enemy.id;g.units=g.units.filter(u=>u.id!==deadId);for(const a of g.units)if(a.order?.targetId===deadId)resumeOrStop(g,a);}}}}
+    if(b.type==='tower'){b.cooldown=Math.max(0,b.cooldown-dt);if(b.cooldown<=0){const enemy=g.units.filter(u=>u.owner!==b.owner&&g.visible[b.owner].has(idx(Math.floor(u.x),Math.floor(u.y)))&&Math.hypot(u.x-(t.x+.5),u.y-(t.y+.5))<=BUILDING.tower.range&&lineOfSight(g,{x:t.x+.5,y:t.y+.5},u)).sort((a,c)=>a.hp-c.hp)[0];if(enemy){
+      const x=t.x+.5,y=t.y+.5;
+      g.effects.push({kind:'tower',owner:b.owner,x,y,tx:enemy.x,ty:enemy.y,at:g.elapsed});
+      damageUnit(g,enemy,BUILDING.tower.damage,Math.sign(x-enemy.x)||undefined);b.cooldown=BUILDING.tower.interval;
+    }}}
   }
 }
 function cleanupAndVictory(g){g.units=g.units.filter(u=>u.hp>0);const destroyed=[0,1].filter(p=>{const b=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;return!b||b.hp<=0;});if(destroyed.length){g.ended=true;g.winner=destroyed.length===2?-1:1-destroyed[0];addLog(g,g.winner<0?'雙方主基地同時摧毀，戰局平手。':`${g.players[g.winner].name}摧毀主基地，獲得勝利！`);}}
 function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt;g.tick++;
+  g.effects=g.effects.filter(e=>g.elapsed-e.at<.8);
   updateVision(g);moveUnits(g,dt);attackAndGather(g,dt);tickBuildings(g,dt);cleanupAndVictory(g);
   if(room.ai){g.aiThink+=dt;if(g.aiThink>1.25){g.aiThink=0;aiPlay(room);}}
-  if(g.tick%2===0)broadcastState(room);
+  if(g.ended||g.tick%2===0)broadcastState(room);
 }
 function aiPlay(room){
   const g=room.game,p=1,pl=g.players[p],enemyBase=idx(g.players[0].base.x,g.players[0].base.y);
@@ -258,7 +285,11 @@ function canAIPay(pl,type){return Object.entries(UNIT[type].cost).every(([k,v])=
 
 function broadcast(room,payload){for(const ws of room.players)if(ws)wsSend(ws,payload);}
 function broadcastState(room){if(!room.game)return;for(let p=0;p<2;p++)if(room.players[p])wsSend(room.players[p],serialize(room.game,p));}
-function broadcastLobby(room){for(const ws of room.players)if(ws)wsSend(ws,{type:'lobby',room:room.id,count:room.ai?2:room.players.filter(Boolean).length,needed:2,ai:room.ai});}
+function broadcastLobby(room){
+  const count=room.ai?2:room.players.filter(Boolean).length;
+  const names=room.names.map((name,slot)=>room.players[slot]||(room.ai&&slot===1)?name:null);
+  for(const ws of room.players)if(ws)wsSend(ws,{type:'lobby',room:room.id,count,needed:2,ai:room.ai,names});
+}
 function randCode(){return crypto.randomBytes(3).toString('hex').toUpperCase();}
 function safeName(s){return String(s||'玩家').replace(/[<>\u0000-\u001f]/g,'').slice(0,16)||'玩家';}
 function joinRoom(ws,msg){
@@ -270,7 +301,11 @@ function joinRoom(ws,msg){
   }else if(msg.type==='join'&&msg.room){
     const id=String(msg.room).toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12);room=rooms.get(id);
     if(!room){wsSend(ws,{type:'error',text:'找不到這個房間代碼。'});return;}
-    if(msg.token){const old=room.tokens.findIndex(t=>t===msg.token);if(old>=0){if(room.players[old]&&room.players[old]!==ws){const previous=room.players[old];room.players[old]=null;previous.end();}slot=old;}}
+    if(msg.token){
+      slot=room.tokens.findIndex(token=>token===msg.token);
+      if(slot<0){wsSend(ws,{type:'error',text:'無法恢復原本的座位，請重新加入房間。'});return;}
+      if(room.players[slot]&&room.players[slot]!==ws){const previous=room.players[slot];room.players[slot]=null;previous.end();}
+    }
     if(slot<0)slot=room.players.findIndex((x,i)=>!x&&i===1&&!room.ai);
     if(slot<0){wsSend(ws,{type:'error',text:'房間已滿，請建立新房間。'});return;}
     room.players[slot]=ws;room.names[slot]=safeName(msg.name);room.disconnectAt=null;if(room.game)room.game.players[slot].name=room.names[slot];
@@ -307,11 +342,13 @@ function disconnect(ws){if(ws._appClosed)return;ws._appClosed=true;sockets.delet
 const server=http.createServer((req,res)=>{
   let pathname='/';try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{}
   if(pathname==='/healthz'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});res.end('ok');return;}
-  const file=pathname==='/'?path.join(__dirname,'index.html'):path.join(__dirname,pathname.replace(/^\/+/,''));
-  if(file!==path.join(__dirname,'index.html')){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found');return;}
-  fs.readFile(file,(err,data)=>{if(err){res.writeHead(500);res.end('Unable to load game');return;}res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});res.end(data);});
+  const file=path.resolve(__dirname,pathname==='/'?'index.html':pathname.replace(/^\/+/,'')),relative=path.relative(__dirname,file);
+  const allowed=relative==='index.html'||(relative.startsWith(`assets${path.sep}`)&&!relative.startsWith('..')&&!path.isAbsolute(relative));
+  if(!allowed){res.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});res.end('Not found');return;}
+  const contentType={'.png':'image/png','.jpg':'image/jpeg'}[path.extname(file)]||'text/html; charset=utf-8';
+  fs.readFile(file,(err,data)=>{if(err){res.writeHead(500);res.end('Unable to load game');return;}res.writeHead(200,{'Content-Type':contentType,'Cache-Control':contentType.startsWith('image/')?'public, max-age=86400':'no-store'});res.end(data);});
 });
 server.on('upgrade',upgrade);
 setInterval(()=>{for(const socket of sockets){if(socket.destroyed)continue;if(socket._appWaitingPong){socket.destroy();continue;}socket._appWaitingPong=true;socket.write(wsFrame(9));}},25000);
 setInterval(()=>{const now=Date.now();for(const [id,room]of rooms){if(room.game&&!room.game.ended){const connected=room.ai?!!room.players[0]:!!room.players[0]&&!!room.players[1];if(connected)tickGame(room,TICK/1000);else if(room.disconnectAt&&now-room.disconnectAt>120000){rooms.delete(id);}}else if(!room.players.some(Boolean))rooms.delete(id);}},TICK);
-server.listen(PORT,HOST,()=>console.log(`界域爭鋒伺服器已啟動： http://localhost:${PORT}`));
+server.listen(PORT,HOST,()=>console.log(`風起群島伺服器已啟動： http://localhost:${PORT}`));
