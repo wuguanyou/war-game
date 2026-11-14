@@ -7,29 +7,30 @@ const crypto = require('node:crypto');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8080);
-const SIZE = 32, TILE = 28, TICK = 100;
+const SIZE = 40, TILE = 28, TICK = 100;
 const MID = SIZE / 2, BASE_X = [3, SIZE - 4];
+const AI_PREPARATION_SECONDS = 75;
 const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
 const WORK_RANGE = 1.1;
 const RESOURCES = ['food','wood','stone','gold'];
 const UNIT = {
-  villager: {name:'村民',hp:70,speed:2.35,vision:4,range:0.8,damage:4,interval:1.1,cost:{food:45},time:13,canGather:true},
-  sword: {name:'劍士',hp:145,speed:2.8,vision:4,range:1.25,damage:23,buildingDamage:18,interval:.9,cost:{food:55,wood:15},time:12},
-  archer: {name:'弓箭手',hp:88,speed:2.65,vision:6,range:5.2,damage:17,buildingDamage:6,interval:1.15,cost:{food:45,wood:28},time:14},
-  pike: {name:'長槍兵',hp:128,speed:2.55,vision:4,range:1.35,damage:20,buildingDamage:10,interval:1,cost:{food:55,wood:20},time:13},
-  siege: {name:'攻城車',hp:230,speed:1.25,vision:3.5,range:3.1,damage:74,buildingDamage:90,interval:2.3,cost:{wood:70,stone:55,gold:20},time:27,siege:true}
+  villager: {name:'村民',hp:90,speed:2.35,vision:4,range:0.8,damage:4,interval:1.1,cost:{food:45},time:13,canGather:true},
+  sword: {name:'劍士',hp:180,speed:2.8,vision:4,range:1.25,damage:23,buildingDamage:18,interval:.9,cost:{food:55,wood:15},time:12},
+  archer: {name:'弓箭手',hp:110,speed:2.65,vision:6,range:5.2,damage:17,buildingDamage:6,interval:1.15,cost:{food:45,wood:28},time:14},
+  pike: {name:'長槍兵',hp:160,speed:2.55,vision:4,range:1.35,damage:20,buildingDamage:10,interval:1,cost:{food:55,wood:20},time:13},
+  siege: {name:'攻城車',hp:290,speed:1.25,vision:3.5,range:3.1,damage:74,buildingDamage:90,interval:2.3,cost:{wood:70,stone:55,gold:20},time:27,siege:true}
 };
 const BUILDING_DPS=Object.fromEntries(Object.entries(UNIT).filter(([,unit])=>unit.buildingDamage).map(([type,unit])=>[
   type,Math.round(unit.buildingDamage/unit.interval*10)/10
 ]));
 const BUILDING = {
-  base: {name:'主基地',hp:1500,vision:7},
-  barracks: {name:'兵營',hp:560,vision:2,cost:{wood:100,stone:35},time:12,buildOn:'land'},
-  tower: {name:'防禦塔',hp:410,vision:7,cost:{wood:42,stone:58},time:11,buildOn:'land',range:5.8,damage:18,interval:1.1},
-  wall: {name:'城牆',hp:420,vision:1,cost:{stone:20},time:5,buildOn:'land'},
-  gate: {name:'城門',hp:320,vision:2,cost:{wood:25,stone:25},time:7,buildOn:'land'},
-  farm: {name:'農場',hp:280,vision:2,cost:{wood:52},time:9,buildOn:'land',foodRate:0.19},
-  gather: {name:'採集站',hp:330,vision:2,cost:{wood:45,stone:18},time:9,buildOn:'resource'}
+  base: {name:'主基地',hp:2400,vision:7},
+  barracks: {name:'兵營',hp:840,vision:2,cost:{wood:100,stone:35},time:12,buildOn:'land'},
+  tower: {name:'防禦塔',hp:620,vision:7,cost:{wood:42,stone:58},time:11,buildOn:'land',range:5.8,damage:18,interval:1.1},
+  wall: {name:'城牆',hp:630,vision:1,cost:{stone:20},time:5,buildOn:'land'},
+  gate: {name:'城門',hp:480,vision:2,cost:{wood:25,stone:25},time:7,buildOn:'land'},
+  farm: {name:'農場',hp:420,vision:2,cost:{wood:52},time:9,buildOn:'land',foodRate:0.19},
+  gather: {name:'採集站',hp:500,vision:2,cost:{wood:45,stone:18},time:9,buildOn:'resource'}
 };
 const RESOURCE_META = {
   wood:{name:'木材',icon:'🌲',amount:[90,145]},
@@ -63,7 +64,7 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
       else if(r<.36){terrain='berry';resource='food';}
     }
     if(resource){const [lo,hi]=RESOURCE_META[resource].amount;amount=lo+Math.floor(rnd()*(hi-lo+1));}
-    for(const xx of [x,SIZE-1-x])tiles[idx(xx,y)]={x:xx,y,terrain,resource,amount,owner:-1,hp:120,maxHp:120,building:null,variation:Math.floor(rnd()*4)};
+    for(const xx of [x,SIZE-1-x])tiles[idx(xx,y)]={x:xx,y,terrain,resource,amount,building:null,variation:Math.floor(rnd()*4)};
   }
   // Guaranteed, mirrored approaches to wood, stone and food near each start.
   const guaranteed=[{dx:3,dy:-2,t:'forest',r:'wood'},{dx:4,dy:2,t:'stone',r:'stone'},{dx:5,dy:-1,t:'berry',r:'food'},{dx:5,dy:2,t:'forest',r:'wood'}];
@@ -73,7 +74,7 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
   for(let p=0;p<2;p++){
     const bx=players[p].base.x,dir=p===0?1:-1;
     for(const [type,dx,dy] of [['villager',dir,0],['villager',dir,-1],['villager',dir,1],['villager',-dir,0],['sword',2*dir,0],['sword',2*dir,-1]])units.push(makeUnit(null,p,type,bx+dx,MID+dy));
-    for(let y=MID-2;y<=MID+2;y++)for(let x=bx-2;x<=bx+2;x++){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}t.owner=p;}
+    for(let y=MID-2;y<=MID+2;y++)for(let x=bx-2;x<=bx+2;x++){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}}
     tiles[idx(bx,MID)].building=makeBuilding(p,'base',bx,MID,true);
   }
   return {seed,tiles,players,units,elapsed:0,tick:0,ended:false,winner:-1,memories:[Array(SIZE*SIZE).fill(null),Array(SIZE*SIZE).fill(null)],visible:[new Set(),new Set()],ai:false,aiThink:0,log:[],effects:[]};
@@ -124,7 +125,6 @@ function lineOfSight(g,a,b){
 }
 function visionFor(g,p){
   const v=new Set();const add=(x,y,r,circle=true)=>{const minX=Math.max(0,Math.floor(x-r)),maxX=Math.min(SIZE-1,Math.floor(x+r)),minY=Math.max(0,Math.floor(y-r)),maxY=Math.min(SIZE-1,Math.floor(y+r));for(let yy=minY;yy<=maxY;yy++)for(let xx=minX;xx<=maxX;xx++)if(!circle||Math.hypot(xx+.5-x,yy+.5-y)<=r)v.add(idx(xx,yy));};
-  for(const t of g.tiles)if(t.owner===p)add(t.x+.5,t.y+.5,1.55,false);
   for(const u of g.units)if(u.owner===p)add(u.x,u.y,UNIT[u.type].vision,true);
   for(const t of g.tiles)if(t.building&&t.building.owner===p)add(t.x+.5,t.y+.5,BUILDING[t.building.type].vision||1.5,true);
   g.visible[p]=v;return v;
@@ -137,8 +137,8 @@ const UNEXPLORED=Array.from({length:SIZE*SIZE},(_,i)=>{
 function serialize(g,p,previousTiles){
   const vis=g.visible[p],mem=g.memories[p];
   for(const i of vis){
-    const {x,y,terrain,resource,amount,owner,hp,maxHp,building:b}=g.tiles[i];
-    mem[i]={x,y,terrain,resource,amount,owner,hp,maxHp,building:b?{id:b.id,type:b.type,open:b.open,owner:b.owner,hp:b.hp,maxHp:b.maxHp,underConstruction:b.underConstruction,progress:b.progress,buildTime:b.buildTime}:null};
+    const {x,y,terrain,resource,amount,building:b}=g.tiles[i];
+    mem[i]={x,y,terrain,resource,amount,building:b?{id:b.id,type:b.type,open:b.open,owner:b.owner,hp:b.hp,maxHp:b.maxHp,underConstruction:b.underConstruction,progress:b.progress,buildTime:b.buildTime}:null};
   }
   const tiles=[];
   for(let i=0;i<UNEXPLORED.length;i++){
@@ -189,7 +189,7 @@ function workOrder(g,u,tileIndex,kind,path=workPath(g,u,tileIndex)){
   return true;
 }
 function attackOrder(g,u,target){u.order={kind:'attack',targetKind:target.kind,targetId:target.id??null,tile:target.tile??null,lastTargetCell:-1};u.path=[];u.think=0;}
-function canBuild(type,t){if(!t||t.owner<0)return false;const d=BUILDING[type];if(!d||type==='base'||t.building||t.terrain==='water')return false;if(d.buildOn==='resource')return!!t.resource&&t.resource!=='food';return!t.resource;}
+function canBuild(type,t){const d=BUILDING[type];if(!t||!d||type==='base'||t.building||t.terrain==='water')return false;if(d.buildOn==='resource')return!!t.resource&&t.resource!=='food';return!t.resource;}
 function applyCommand(g,p,msg){
   if(g.ended||!msg||typeof msg!=='object')return;
   const ids=Array.isArray(msg.units)?msg.units.filter(id=>typeof id==='string').slice(0,60):[];
@@ -206,11 +206,7 @@ function applyCommand(g,p,msg){
     if(t.building&&t.building.owner!==p){for(const u of selected)if(u.type!=='villager')attackOrder(g,u,{kind:'building',id:t.building.id,tile:i});return;}
     const enemy=g.units.find(u=>u.owner!==p&&Math.floor(u.x)===msg.x&&Math.floor(u.y)===msg.y&&g.visible[p].has(idx(Math.floor(u.x),Math.floor(u.y))));
     if(enemy){for(const u of selected)if(u.type!=='villager')attackOrder(g,u,{kind:'unit',id:enemy.id});return;}
-    if(t.owner!==p&&t.building?.type!=='base'&&t.terrain!=='water'){
-      const adjacent=adjacentIndices(i).some(n=>g.tiles[n].owner===p);
-      if(!adjacent){sendTo(g,p,{type:'notice',text:'只能攻擊與我方領土相鄰的土地。'});return;}
-      for(const u of selected)if(u.type!=='villager')attackOrder(g,u,{kind:'land',tile:i});
-    }
+    sendTo(g,p,{type:'notice',text:'請選擇敵方單位或建築。'});
   } else if(msg.action==='stop'){
     for(const u of selected){u.order=null;u.path=[];u.think=Math.max(u.think,.7);}
   } else if(msg.action==='stance'){
@@ -226,9 +222,10 @@ function applyCommand(g,p,msg){
     gate.open=msg.open;
   } else if(msg.action==='build'){
     const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type)||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
+    if(!g.visible[p].has(i)){sendTo(g,p,{type:'notice',text:'只能在目前視野內施工。'});return;}
     const resuming=t.building?.owner===p&&t.building.underConstruction&&t.building.type===type;
     if(!resuming){
-      if(t.owner!==p||!canBuild(type,t)){sendTo(g,p,{type:'notice',text:'建築需放在我方空地；採集站必須蓋在木、石或金資源格。'});return;}
+      if(!canBuild(type,t)){sendTo(g,p,{type:'notice',text:'建築需放在空地；採集站必須蓋在木、石或金資源格。'});return;}
       if(g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){sendTo(g,p,{type:'notice',text:'請先讓單位離開施工格。'});return;}
     }
     const auto=msg.auto===true;
@@ -274,7 +271,7 @@ function moveUnits(g,dt){
   }
 }
 function resumeOrStop(g,u){const goal=u.order?.resumeMove;if(goal)moveOrder(g,u,goal,'attackMove');else{u.order=null;u.path=[];}}
-function findTarget(g,u){const o=u.order;if(!o)return null;if(o.targetKind==='unit'){const target=g.units.find(x=>x.id===o.targetId&&x.owner!==u.owner);if(target)target.kind='unit';return target||null;}if(o.targetKind==='building'){for(const t of g.tiles)if(t.building?.id===o.targetId)return{kind:'building',building:t.building,tile:t};return null;}if(o.targetKind==='land')return{kind:'land',tile:g.tiles[o.tile]};return null;}
+function findTarget(g,u){const o=u.order;if(!o)return null;if(o.targetKind==='unit'){const target=g.units.find(x=>x.id===o.targetId&&x.owner!==u.owner);if(target)target.kind='unit';return target||null;}if(o.targetKind==='building'){const t=g.tiles[o.tile];if(t?.building?.id===o.targetId)return{kind:'building',building:t.building,tile:t};}return null;}
 function pathToAttackRange(g,u,target,range){
   const ti=target.kind==='unit'?idx(Math.floor(target.x),Math.floor(target.y)):idx(target.tile.x,target.tile.y);
   if(u.order?.lastTargetCell===ti&&u.path?.length)return;
@@ -325,7 +322,6 @@ function attackAndGather(g,dt){
     if(u.order?.kind==='attack'){
       target=findTarget(g,u);if(!target){resumeOrStop(g,u);continue;}
       if(target.kind==='unit'&&!vision[u.owner].has(idx(Math.floor(target.x),Math.floor(target.y)))){resumeOrStop(g,u);continue;}
-      if(target.kind==='land'&&(target.tile.owner===u.owner||!adjacentIndices(idx(target.tile.x,target.tile.y)).some(i=>g.tiles[i].owner===u.owner))){u.order=null;u.path=[];continue;}
     } else if(u.stance!=='force'&&u.type!=='villager'&&u.think<=0&&(!u.order||u.order.kind==='attackMove')){u.think=.35;const resume=u.order?.kind==='attackMove'?xy(u.order.tile):null,limit=u.stance==='hold'?d.range:Math.min(d.vision,4.5);const enemy=g.units.filter(x=>x.owner!==u.owner&&vision[u.owner].has(idx(Math.floor(x.x),Math.floor(x.y)))&&Math.hypot(u.x-x.x,u.y-x.y)<=limit&&(u.stance!=='hold'||lineOfSight(g,u,x))).sort((a,b)=>Math.hypot(u.x-a.x,u.y-a.y)-Math.hypot(u.x-b.x,u.y-b.y))[0];if(enemy){attackOrder(g,u,{kind:'unit',id:enemy.id});if(resume)u.order.resumeMove=resume;if(u.stance==='hold')u.order.holdTarget=true;enemy.kind='unit';target=enemy;}}
     if(!target)continue;
     const tx=target.kind==='unit'?target.x:target.tile.x+.5,ty=target.kind==='unit'?target.y:target.tile.y+.5;
@@ -343,10 +339,11 @@ function attackAndGather(g,dt){
     } else if(target.kind==='building'){
       const bonus=target.building.type==='tower'&&d.siege?1.35:1;
       target.building.hp-=d.buildingDamage*bonus;
-      if(target.building.hp<=0){const ix=target.tile.y*SIZE+target.tile.x,isBase=target.building.type==='base';target.tile.building=null;for(const a of g.units)if(a.order?.targetId===target.building.id){if(!isBase&&adjacentIndices(ix).some(i=>g.tiles[i].owner===a.owner))a.order={kind:'attack',targetKind:'land',tile:ix,lastTargetCell:-1};else a.order=null;a.path=[];}addLog(g,`${g.players[u.owner].name}摧毀${BUILDING[target.building.type].name}。`,u.owner,ix);}
-    } else if(target.kind==='land'){
-      const tile=target.tile;tile.hp-=d.siege?d.damage:d.damage*.72;
-      if(tile.hp<=0){tile.owner=u.owner;tile.hp=tile.maxHp;addLog(g,`${g.players[u.owner].name}奪下 (${tile.x+1}, ${tile.y+1}) 土地。`,u.owner,idx(tile.x,tile.y));u.order=null;u.path=[];}
+      if(target.building.hp<=0){
+        target.tile.building=null;
+        for(const a of g.units)if(a.order?.targetId===target.building.id){a.order=null;a.path=[];}
+        addLog(g,`${g.players[u.owner].name}摧毀${BUILDING[target.building.type].name}。`,u.owner,idx(target.tile.x,target.tile.y));
+      }
     }
   }
 }
@@ -396,28 +393,38 @@ function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt
 }
 function aiPlay(room){
   const g=room.game,p=1,pl=g.players[p],enemyBase=idx(g.players[0].base.x,g.players[0].base.y);
-  const owned=g.tiles.filter(t=>t.owner===p),villagers=g.units.filter(u=>u.owner===p&&u.type==='villager'),soldiers=g.units.filter(u=>u.owner===p&&u.type!=='villager');
+  const villagers=g.units.filter(u=>u.owner===p&&u.type==='villager'),soldiers=g.units.filter(u=>u.owner===p&&u.type!=='villager');
   for(const v of villagers)if(!v.order){
     const resources=g.tiles.filter(t=>t.resource&&t.amount>3&&g.visible[p].has(idx(t.x,t.y))).sort((a,b)=>Math.abs(a.x-v.x)+Math.abs(a.y-v.y)-Math.abs(b.x-v.x)-Math.abs(b.y-v.y));
     resources.some(t=>workOrder(g,v,idx(t.x,t.y),'gather'));
   }
   const base=g.tiles[idx(pl.base.x,pl.base.y)].building;
-  let barracks=owned.find(t=>t.building?.type==='barracks');
+  const barracks=g.tiles.find(t=>t.building?.type==='barracks'&&t.building.owner===p);
   if(!barracks&&canAIPay(pl,BUILDING.barracks.cost)){
     const builder=villagers.find(v=>!v.order||v.order.kind==='gather');
-    if(builder)owned.some(t=>{
+    if(builder)g.tiles.some(t=>{
+      if(Math.abs(t.x-pl.base.x)>2||Math.abs(t.y-pl.base.y)>2||!g.visible[p].has(idx(t.x,t.y)))return false;
       if(!canBuild('barracks',t))return false;
       applyCommand(g,p,{action:'build',units:[builder.id],building:'barracks',x:t.x,y:t.y});
       return !!t.building;
     });
   }
   if(barracks?.building&&!barracks.building.underConstruction&&barracks.building.queue.length<3){const type=canAIPay(pl,UNIT.sword.cost)?'sword':canAIPay(pl,UNIT.archer.cost)?'archer':null;if(type)applyCommand(g,p,{action:'train',unit:type,x:barracks.x,y:barracks.y});}
-  if(base&&base.queue.length<2&&pl.resources.food>=UNIT.villager.cost.food+UNIT.sword.cost.food){
+  if(base&&base.queue.length<2&&pl.resources.food>=UNIT.villager.cost.food+UNIT.sword.cost.food
+    &&soldiers.length+(barracks?.building.queue.length??0)>=4){
     applyCommand(g,p,{action:'train',unit:'villager',x:base.x,y:base.y});
   }
-  const frontier=g.tiles.filter(t=>t.owner!==p&&t.terrain!=='water'&&!t.building&&adjacentIndices(idx(t.x,t.y)).some(i=>g.tiles[i].owner===p)).sort((a,b)=>Math.abs(a.x-g.players[0].base.x)+Math.abs(a.y-MID)-Math.abs(b.x-g.players[0].base.x)-Math.abs(b.y-MID));
-  if(frontier.length){const target=frontier[0];const idle=soldiers.filter(u=>!u.order);for(const u of idle.slice(0,Math.min(3,idle.length)))attackOrder(g,u,{kind:'land',tile:idx(target.x,target.y)});}
-  const targetBase=g.tiles[enemyBase].building;if(targetBase&&soldiers.length>=8&&soldiers.every(u=>!u.order)){for(const u of soldiers)attackOrder(g,u,{kind:'building',id:targetBase.id,tile:enemyBase});}
+  if(g.elapsed<AI_PREPARATION_SECONDS)return;
+  const idle=soldiers.filter(u=>!u.order);
+  if(!idle.length)return;
+  const enemyBuilding=g.visible[p].has(enemyBase)&&g.tiles[enemyBase].building
+    ?g.tiles[enemyBase]
+    :g.tiles.find(t=>t.building?.owner===0&&g.visible[p].has(idx(t.x,t.y)));
+  if(enemyBuilding){
+    for(const u of idle)attackOrder(g,u,{kind:'building',id:enemyBuilding.building.id,tile:idx(enemyBuilding.x,enemyBuilding.y)});
+  }else if(soldiers.length>=4){
+    for(const u of idle)moveOrder(g,u,{x:BASE_X[0]+1,y:MID},'attackMove');
+  }
 }
 function canAIPay(pl,cost){return Object.entries(cost).every(([k,v])=>pl.resources[k]>=v);}
 

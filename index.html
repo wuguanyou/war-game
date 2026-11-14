@@ -101,6 +101,14 @@
     .context-icon.unit-icon{width:31px;height:31px;color:transparent;margin:0}
     .note{margin-top:6px;color:var(--muted);font-size:11px}
     .dock-tools{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
+    #recruitMenu>summary{color:#203d39;background:#edca85;border-color:#edca85;font-weight:700}
+    .dock-tools{position:relative}
+    #recruitMenu{position:static}
+    .recruit-content{z-index:3;width:min(320px,calc(100vw - 22px));max-height:55dvh;overflow:auto;right:0}
+    .recruit-toolbar{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+    #recruitSite{min-width:0;flex:1;padding:6px;background:var(--raised);color:var(--paper);border:1px solid var(--edge);border-radius:4px}
+    #recruitBuild{margin-bottom:8px}
+    #queueInfo{line-height:1.5;white-space:pre-line}
     .feed-content{bottom:calc(100% + 8px);right:0}
     #serverHint{font-size:11px;color:var(--muted)}
     .log-list{margin-top:7px;max-height:145px;overflow:auto}
@@ -267,6 +275,7 @@
             <div class="context-title"><div class="context-icon" id="contextIcon" aria-hidden="true">⌖</div><div><b id="contextName"></b><small id="contextSub"></small></div></div>
             <div id="contextBody" class="stats"></div>
             <button class="game-button" id="gateToggle" type="button" hidden>開城門</button>
+            <button class="game-button" id="recruitFromBuilding" type="button" hidden>開啟招募</button>
           </div>
           <div class="section" id="unitActions" hidden>
             <div class="section-title">部隊命令</div>
@@ -281,9 +290,20 @@
             <div class="unit-list" id="unitList"></div>
           </div>
           <div class="section" id="buildActions" hidden><div class="section-title" id="buildTitle">建造</div><div class="button-grid" id="buildButtons"></div><div class="note" id="buildNote"></div></div>
-          <div class="section" id="trainActions" hidden><div class="section-title">生產部隊</div><div class="button-grid" id="trainButtons"></div><div class="note" id="queueInfo"></div></div>
         </aside>
         <div class="dock-tools">
+          <details class="feed" id="recruitMenu">
+            <summary>招募部隊</summary>
+            <div class="feed-content recruit-content">
+              <div class="recruit-toolbar">
+                <select id="recruitSite" aria-label="選擇招募建築"></select>
+                <button class="game-button" id="recruitLocate" type="button">前往</button>
+              </div>
+              <button class="game-button" id="recruitBuild" type="button">建造兵營</button>
+              <div class="button-grid" id="trainButtons"></div>
+              <div class="note" id="queueInfo" role="status"></div>
+            </div>
+          </details>
           <details class="feed" id="battleLog">
             <summary>戰報</summary>
             <div class="feed-content"><div id="serverHint">等待戰區同步</div><div class="log-list" id="logs"></div></div>
@@ -307,7 +327,7 @@
       <div class="lobby-content">
         <div class="hero-copy">
           <h1 id="lobbyTitle" tabindex="-1">風起群島</h1>
-          <p>即時策略對戰 · 擴張領土，攻下敵方主堡</p>
+          <p>即時策略對戰 · 建立防線，攻下敵方主堡</p>
         </div>
         <div id="lobbyOptions">
           <nav class="lobby-modes" aria-label="對局模式">
@@ -334,7 +354,7 @@
     </div>
   </main>
 
-  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵點選單位或建築，拖曳框選部隊。按住 Shift 可加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>選村民後選建築，再點己方空地。點選完工的兵營可生產部隊，點自家城門可開關。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵點選單位或建築，拖曳框選部隊。按住 Shift 可加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。點自家城門可開關。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-card"><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
   <div class="toast" id="toast" role="status"></div>
 
@@ -345,7 +365,7 @@
     const mainCtx=canvas.getContext('2d'),terrainCache=document.createElement('canvas'),overviewCache=document.createElement('canvas');
     let ctx=mainCtx,needsDraw=true,mapOverviewDirty=true,orderMarker=null;
     const dirtyTiles=new Set();
-    let SIZE=32;
+    let SIZE=40;
     const COLORS=['#72e6bf','#f48770'];
     const terrainAtlas=new Image(),buildingAtlas=new Image(),unitAtlas=new Image();
     terrainAtlas.src='/assets/terrain-16bit.png';
@@ -470,7 +490,7 @@
             const i=tile.y*SIZE+tile.x,old=state?.tiles[i];
             const terrainChanged=!message.tileChanges||old?.terrain!==tile.terrain||old?.unseen!==tile.unseen;
             if(terrainChanged||old?.remembered!==tile.remembered)dirtyTiles.add(i);
-            if(terrainChanged||old?.owner!==tile.owner||old?.building?.id!==tile.building?.id)mapOverviewDirty=true;
+            if(terrainChanged||old?.building?.id!==tile.building?.id)mapOverviewDirty=true;
             message.tiles[i]=tile;
           }
           smoothState(message);
@@ -541,7 +561,7 @@
     }
     $('copyRoom').onclick=copyRoomCode;
     $('copyWaitingCode').onclick=copyRoomCode;
-    const gameMenu=$('gameMenu'),battleLog=$('battleLog'),guide=$('guideModal');
+    const gameMenu=$('gameMenu'),battleLog=$('battleLog'),recruitMenu=$('recruitMenu'),guide=$('guideModal');
     function closeGuide(){
       guide.classList.add('hidden');
       $('lobbyPage').inert=false;
@@ -563,7 +583,7 @@
     $('closeGuide').onclick=closeGuide;
     guide.addEventListener('click',event=>{if(event.target===guide)closeGuide()});
     document.addEventListener('pointerdown',event=>{
-      for(const panel of [gameMenu,battleLog])if(panel.open&&!panel.contains(event.target))panel.open=false;
+      for(const panel of [gameMenu,battleLog,recruitMenu])if(panel.open&&!panel.contains(event.target))panel.open=false;
     });
     $('copyRoom').addEventListener('click',()=>{gameMenu.open=false;gameMenu.querySelector('summary').focus()});
     function returnToLobby(){
@@ -583,11 +603,12 @@
       attackMode=mode==='attack'&&!attackMode;
       orderMode=mode==='order'&&!orderMode;
       pendingBuild=null;
+      autoBarracks=false;
       renderUI();
     }
     function cancelTargetMode(){
       if(!pendingBuild&&!attackMode&&!orderMode)return false;
-      pendingBuild=null;attackMode=false;orderMode=false;renderUI();return true;
+      pendingBuild=null;autoBarracks=false;attackMode=false;orderMode=false;renderUI();return true;
     }
     $('attackMode').onclick=()=>setTargetMode('attack');
     $('orderMode').onclick=()=>setTargetMode('order');
@@ -607,9 +628,6 @@
           const x=t.x*cw,y=t.y*ch;
           if(t.unseen&&t.terrain!=='water')continue;
           map.fillStyle=TERRAIN_COLORS[t.terrain]?.[0]??'#183e41';map.fillRect(x,y,cw+.3,ch+.3);
-          if(t.owner>=0){
-            map.fillStyle=COLORS[t.owner];map.globalAlpha=.55;map.fillRect(x,y,cw+.3,ch+.3);map.globalAlpha=1;
-          }
           if(t.building){
             map.fillStyle=t.building.owner===slot?'#ecdfa9':'#ef8970';map.fillRect(x+cw*.2,y+ch*.2,cw*.6,ch*.6);
           }
@@ -715,6 +733,7 @@
       if(own&&tile.visible){
         const next=state.buildings?.find(b=>b.id===building.id)?.queue?.[0];
         if(next)details.push(next.remaining>0?`生產中：${U[next.unit].name} · ${Math.ceil(next.remaining)} 秒`:'已完成，等待出口淨空');
+        if(TRAINING[building.type])details.push(building.underConstruction?'完工後可招募':'右鍵開啟招募');
       }
       if(tile.remembered)details.push('最後已知情報');
       setText('buildingTipTitle',B[building.type]?.name??'建築');
@@ -786,8 +805,9 @@
       if(pendingBuild){
         const site=tile?.building?.underConstruction&&tile.building.type===pendingBuild?tile:tileState(t.x,t.y);
         if(!site?.visible)return showToast('只能在目前視野內放置建築。');
-        command('build',{building:pendingBuild,x:site.x,y:site.y});
-        pendingBuild=null;renderUI();return;
+        if(autoBarracks&&(site.terrain==='water'||site.resource||site.building))return showToast('請選擇視野內的空地。');
+        command('build',{building:pendingBuild,x:site.x,y:site.y,auto:autoBarracks});
+        pendingBuild=null;autoBarracks=false;renderUI();return;
       }
       if((attackMode||orderMode)&&selected.size){issueMapOrder(t);return;}
       const unit=pointUnit(t);
@@ -805,9 +825,10 @@
     canvas.addEventListener('dblclick',e=>{if(!state)return;const t=screenToTile(e),u=pointUnit(t);if(!u||u.owner!==slot)return;const same=state.units.filter(x=>x.owner===slot&&x.type===u.type&&tileState(Math.floor(x.x),Math.floor(x.y))?.visible);selected=new Set(same.map(x=>x.id));renderUI()});
     function issueMapOrder(point){
       if(!state||state.ended)return;
+      const ground=tileState(point.x,point.y),tile=targetTile(point),unit=pointUnit(point);
+      if(!attackMode&&!orderMode&&openRecruitmentAt(tile))return;
       const chosen=ownSelected();
       if(!chosen.length)return showToast('先選取我方單位。');
-      const ground=tileState(point.x,point.y),tile=targetTile(point),unit=pointUnit(point);
       const soldier=chosen.some(u=>u.type!=='villager'),villagers=chosen.filter(u=>u.type==='villager');
       const enemyBuilding=tile?.visible&&tile.building&&tile.building.owner!==slot;
       const enemy=unit&&unit.owner!==slot?tileState(Math.floor(unit.x),Math.floor(unit.y)):null;
@@ -815,6 +836,7 @@
       if(attackMode||enemyBuilding||enemy?.visible){
         if(!soldier)return showToast('請先選取戰鬥單位。');
         if(!attackTarget?.visible)return showToast('請先派部隊偵察攻擊目標。');
+        if(!enemyBuilding&&!enemy?.visible)return showToast('請選擇敵方單位或建築。');
         command('attack',{x:attackTarget.x,y:attackTarget.y,units:chosen.filter(u=>u.type!=='villager').map(u=>u.id)});
       }else if(villagers.length&&tile?.visible&&tile.resource&&tile.amount>0){
         command('gather',{x:tile.x,y:tile.y,units:villagers.map(u=>u.id)});
@@ -826,10 +848,10 @@
     }
     window.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&!guide.classList.contains('hidden')){closeGuide();return;}
-      if($('game').inert||event.target.matches('input,textarea,[contenteditable]'))return;
+      if($('game').inert||event.target.matches('input,select,textarea,[contenteditable]'))return;
       if(event.key==='Escape'){
-        if(gameMenu.open||battleLog.open){
-          const panel=gameMenu.open?gameMenu:battleLog;
+        const panel=[gameMenu,battleLog,recruitMenu].find(menu=>menu.open);
+        if(panel){
           panel.open=false;panel.querySelector('summary').focus();return;
         }
         if(cancelTargetMode())return;
@@ -856,7 +878,7 @@
     }
     function setText(id,value){const node=$(id),label=String(value);if(node.textContent!==label)node.textContent=label;}
     function canBuildFromTile(tile){
-      return tile?.visible&&tile.owner===slot&&tile.terrain!=='water'&&
+      return tile?.visible&&tile.terrain!=='water'&&
         (tile.building?tile.building.owner===slot&&tile.building.underConstruction:tile.resource!=='food');
     }
     function buildMatchesTile(type,tile){
@@ -874,10 +896,11 @@
 
       const units=ownSelected(),hasUnits=units.length>0;
       const hasVillager=units.some(u=>u.type==='villager');
-      if(!hasVillager)pendingBuild=null;
+      if(!hasVillager&&!autoBarracks)pendingBuild=null;
       if(!hasUnits){attackMode=false;orderMode=false;}
       const tile=selectedTile?tileState(selectedTile.x,selectedTile.y):null;
       const building=tile&&(state.buildings?.find(b=>b.x===tile.x&&b.y===tile.y)||tile.building);
+      $('recruitFromBuilding').hidden=hasUnits||building?.owner!==slot||!TRAINING[building.type]||state.ended;
       const gateToggle=$('gateToggle');
       gateToggle.hidden=hasUnits||building?.type!=='gate'||building.owner!==slot||building.underConstruction||state.ended;
       if(!gateToggle.hidden)gateToggle.textContent=building.open?'關城門':'開城門';
@@ -917,7 +940,7 @@
         button.setAttribute('aria-pressed',active);
       }
       renderUnitList(units);
-      renderTrainActions(tile,building);
+      renderRecruitment(building);
       if(hasUnits){
         const hp=units.reduce((total,u)=>total+u.hp,0),maxHp=units.reduce((total,u)=>total+u.maxHp,0);
         const active=units[0].order?.kind;
@@ -926,14 +949,13 @@
         $('contextSub').textContent=summary;
         $('contextBody').innerHTML=`<div class="stat"><label>生命值</label><strong>${Math.ceil(hp)} / ${maxHp}</strong><div class="bar"><i style="width:${hp/maxHp*100}%"></i></div></div>`;
       }else if(tile&&!tile.unseen){
-        const owner=tile.owner<0?'中立':tile.owner===slot?'我方':'敵方';
+        const owner=building?(building.owner===slot?'我方 · ':'敵方 · '):'';
         $('contextName').textContent=building?B[building.type].name:tile.resource?`${RES[tile.resource]}資源格`:tile.terrain==='water'?'水域':'土地';
         const gateStatus=building?.type==='gate'&&!building.underConstruction?(building.open?' · 已開啟':' · 已關閉'):'';
-        $('contextSub').textContent=`${owner} · ${tile.x+1}, ${tile.y+1}${gateStatus}${tile.remembered?' · 最後情報':''}`;
-        const terrain=`<div class="stat"><label>土地耐久</label><strong>${Math.ceil(tile.hp||0)} / ${tile.maxHp||120}</strong></div>`;
+        $('contextSub').textContent=`${owner}${tile.x+1}, ${tile.y+1}${gateStatus}${tile.remembered?' · 最後情報':''}`;
         const resource=tile.resource?`<div class="stat"><label>剩餘資源</label><strong>${Math.floor(tile.amount||0)}</strong></div>`:'';
         const structure=building?`<div class="stat"><label>${building.underConstruction?'施工進度':'建築耐久'}</label><strong>${building.underConstruction?`${Math.floor(building.progress/building.buildTime*100)}%`:`${Math.ceil(building.hp)} / ${building.maxHp}`}</strong></div>`:'';
-        $('contextBody').innerHTML=terrain+resource+structure;
+        $('contextBody').innerHTML=resource+structure;
       }
       if(state.logs){
         const key=state.logs.map(log=>log.at+':'+log.text).join('|');
@@ -983,6 +1005,7 @@
             return;
           }
           pendingBuild=pendingBuild===type?null:type;
+          autoBarracks=false;
           attackMode=false;orderMode=false;
           $('attackMode').classList.remove('active');
           if(pendingBuild)showToast(`選取施工位置：${B[type].name}`);
@@ -995,10 +1018,58 @@
       base:[['villager','糧45 · 13秒']],
       barracks:[['sword','糧55 木15 · 12秒'],['archer','糧45 木28 · 14秒'],['pike','糧55 木20 · 13秒'],['siege','木70 石55 金20 · 27秒']]
     };
-    function renderTrainActions(tile,building){
-      const canTrain=building?.owner===slot&&TRAINING[building.type];
-      $('trainActions').hidden=!canTrain;
-      const holder=$('trainButtons'),key=canTrain?`${tile.x},${tile.y},${building.type}`:'';
+    let recruitSiteId='',autoBarracks=false;
+    const recruitSite=$('recruitSite');
+    function openRecruitmentAt(tile){
+      const b=tile?.building;
+      if(!tile?.visible||b?.owner!==slot||!TRAINING[b.type])return false;
+      recruitSiteId=b.id;
+      selected.clear();selectedTile={x:tile.x,y:tile.y};
+      clearBuildingTip();renderUI();recruitMenu.open=true;
+      return true;
+    }
+    $('recruitFromBuilding').onclick=()=>{
+      if(selectedTile)openRecruitmentAt(tileState(selectedTile.x,selectedTile.y));
+    };
+    recruitSite.onchange=()=>{recruitSiteId=recruitSite.value;renderUI()};
+    $('recruitLocate').onclick=()=>{
+      const building=state?.buildings.find(b=>b.id===recruitSiteId);
+      if(!building)return;
+      camera.x=building.x+.5;camera.y=building.y+.5;clampCamera();needsDraw=true;
+    };
+    $('recruitBuild').onclick=()=>{
+      if(!state||state.ended)return;
+      recruitMenu.open=false;
+      pendingBuild='barracks';autoBarracks=true;attackMode=false;orderMode=false;
+      renderUI();canvas.focus();
+    };
+    function renderRecruitment(selectedBuilding){
+      const buildings=(state.buildings??[]).filter(b=>TRAINING[b.type]);
+      const keyFor=(b)=>`${b.id}:${!!b.underConstruction}`;
+      const siteKey=buildings.map(keyFor).join(',');
+      const barracks=buildings.filter(b=>b.type==='barracks');
+      const selectedSite=buildings.find(b=>b.id===selectedBuilding?.id);
+      if(barracks.length&&recruitSite.dataset.hasBarracks==='false')recruitSiteId=barracks[0].id;
+      recruitSite.dataset.hasBarracks=String(barracks.length>0);
+      if(selectedSite&&recruitSite.dataset.selected!==selectedSite.id)recruitSiteId=selectedSite.id;
+      recruitSite.dataset.selected=selectedSite?.id??'';
+      if(!buildings.some(b=>b.id===recruitSiteId))recruitSiteId=barracks.find(b=>!b.underConstruction)?.id??barracks[0]?.id??buildings[0]?.id??'';
+      if(recruitSite.dataset.sites!==siteKey){
+        recruitSite.dataset.sites=siteKey;
+        recruitSite.replaceChildren(...buildings.map(b=>{
+          const option=document.createElement('option');
+          option.value=b.id;
+          option.textContent=`${B[b.type].name} (${b.x+1}, ${b.y+1})${b.underConstruction?' · 施工中':''}`;
+          return option;
+        }));
+      }
+      if(recruitSite.value!==recruitSiteId)recruitSite.value=recruitSiteId;
+      recruitSite.disabled=buildings.length<2;
+      const building=buildings.find(b=>b.id===recruitSiteId);
+      const canTrain=building&&TRAINING[building.type];
+      $('recruitLocate').disabled=!building;
+      $('recruitBuild').hidden=barracks.length>0||state.ended;
+      const holder=$('trainButtons'),key=building?.id??'';
       if(holder.dataset.target!==key){
         holder.dataset.target=key;
         holder.replaceChildren(...(canTrain||[]).map(([type,cost])=>{
@@ -1007,16 +1078,17 @@
           const dps=state.buildingDps?.[type];
           const stats=dps===undefined?'':`<em>拆建築 ${dps}／秒</em>`;
           button.innerHTML=`${unitIcon(type)}${U[type].name}<em>${cost}</em>${stats}`;
-          button.onclick=()=>send('command',{command:{action:'train',unit:type,x:tile.x,y:tile.y}});
+          button.onclick=()=>send('command',{command:{action:'train',unit:type,x:building.x,y:building.y}});
           return button;
         }));
       }
-      if(!canTrain)return;
-      for(const button of holder.children)button.disabled=!!building.underConstruction;
-      const queue=building.queue??[];
-      $('queueInfo').textContent=building.underConstruction
+      const queue=building?.queue??[];
+      for(const button of holder.children)button.disabled=state.ended||!!building?.underConstruction||queue.length>=5;
+      const help=!barracks.length?'要招募戰鬥部隊，先按「建造兵營」，再點視野內的空地。':'';
+      const status=building?.underConstruction
         ?`施工中 · ${Math.floor(building.progress/building.buildTime*100)}%`
-        :queue.length?queue.map(q=>`${U[q.unit].name} · ${q.remaining>0?`${Math.ceil(q.remaining)} 秒`:'已完成，等待出口淨空'}`).join('、'):'選擇要訓練的單位';
+        :queue.length?`排隊中 · ${queue.map(q=>`${U[q.unit].name} ${q.remaining>0?`${Math.ceil(q.remaining)} 秒`:'等待出口淨空'}`).join('、')}`:'招募完成後，單位會出現在這座建築旁。';
+      setText('queueInfo',[help,status].filter(Boolean).join('\n'));
     }
 
     function formatTime(s){s=Math.floor(s||0);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
