@@ -597,28 +597,54 @@
     function tileState(x,y){if(!state||x<0||y<0||x>=SIZE||y>=SIZE)return null;return state.tiles[y*SIZE+x]}
     function ownSelected(){return state?.units.filter(u=>selected.has(u.id)&&u.owner===slot)||[]}
     function pointUnit(x,y){if(!state)return null;return state.units.filter(u=>Math.hypot(u.x-(x+.5),u.y-(y+.5))<.68).sort((a,b)=>Math.hypot(a.x-x-.5,a.y-y-.5)-Math.hypot(b.x-x-.5,b.y-y-.5))[0]||null}
+    function targetTile(point){
+      const ground=tileState(point.x,point.y);
+      if(ground?.building&&!ground.unseen)return ground;
+      const x=point.wx*TILE,y=point.wy*TILE;
+      for(let row=Math.min(SIZE-1,point.y+2);row>=Math.max(0,point.y);row--){
+        for(let col=Math.max(0,point.x-1);col<=Math.min(SIZE-1,point.x+1);col++){
+          const tile=tileState(col,row);
+          if(!tile?.building||tile.unseen)continue;
+          const bounds=buildingSpriteBounds(tile.building,col*TILE,row*TILE);
+          if(x>bounds.left+bounds.size*.11&&x<bounds.left+bounds.size*.89&&y>bounds.top+bounds.size*.1&&y<bounds.top+bounds.size*.875)return tile;
+        }
+      }
+      return ground;
+    }
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     canvas.addEventListener('wheel',e=>{e.preventDefault();const r=canvas.getBoundingClientRect();zoomAt(e.deltaY<0?1.12:1/1.12,e.clientX-r.left,e.clientY-r.top)},{passive:false});
     canvas.addEventListener('pointerdown',e=>{if(e.button===1||e.button===2||keys.has(' ')){drag={id:e.pointerId,x:e.clientX,y:e.clientY,cameraX:camera.x,cameraY:camera.y,moved:false};canvas.setPointerCapture(e.pointerId);e.preventDefault()}else if(e.button===0){drag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false,select:true};canvas.setPointerCapture(e.pointerId)}});
     canvas.addEventListener('pointermove',e=>{if(drag&&drag.id===e.pointerId){drag.currentX=e.clientX;drag.currentY=e.clientY;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>5)drag.moved=true;if(!drag.select&&drag.moved){camera.x=drag.cameraX-dx/(camera.zoom*TILE);camera.y=drag.cameraY-dy/(camera.zoom*TILE);clampCamera();draw()}}});
-    canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const old=drag;drag=null;if(old.moved){if(old.select){const a=screenToTile({clientX:old.x,clientY:old.y}),b=screenToTile(e);const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);const picks=state?.units.filter(u=>u.owner===slot&&u.x>=minX&&u.x<maxX+1&&u.y>=minY&&u.y<maxY+1&&tileState(Math.floor(u.x),Math.floor(u.y))?.visible).map(u=>u.id)||[];if(picks.length){selected=new Set(picks);selectedTile=null;renderUI()} }return}if(e.button===0)mapClick(e);});
-    function mapClick(e){if(!state||state.ended)return;const t=screenToTile(e);if(t.x<0||t.y<0||t.x>=SIZE||t.y>=SIZE)return;const tile=tileState(t.x,t.y);if(!tile||tile.unseen)return;
-      if(pendingBuild){if(!tile.visible)return showToast('只能在目前視野內放置建築。');command('build',{building:pendingBuild,x:t.x,y:t.y});pendingBuild=null;renderUI();return;}
+    canvas.addEventListener('pointerup',e=>{if(!drag||drag.id!==e.pointerId)return;const old=drag;drag=null;if(old.moved){if(old.select){const a=screenToTile({clientX:old.x,clientY:old.y}),b=screenToTile(e);const minX=Math.min(a.x,b.x),maxX=Math.max(a.x,b.x),minY=Math.min(a.y,b.y),maxY=Math.max(a.y,b.y);const picks=state?.units.filter(u=>u.owner===slot&&u.x>=minX&&u.x<maxX+1&&u.y>=minY&&u.y<maxY+1&&tileState(Math.floor(u.x),Math.floor(u.y))?.visible).map(u=>u.id)||[];if(picks.length){selected=new Set(picks);selectedTile=null;renderUI()} }return}if(e.button===0||e.button===2&&pendingBuild)mapClick(e);else if(e.button===2)issueMapOrder(screenToTile(e));});
+    canvas.addEventListener('pointercancel',()=>{drag=null});
+    function mapClick(e){if(!state||state.ended)return;const t=screenToTile(e),tile=targetTile(t);if(!tile||tile.unseen)return;
+      if(pendingBuild){
+        const site=tile.building?.underConstruction&&tile.building.type===pendingBuild?tile:tileState(t.x,t.y);
+        if(!site?.visible)return showToast('只能在目前視野內放置建築。');
+        command('build',{building:pendingBuild,x:site.x,y:site.y});
+        pendingBuild=null;renderUI();return;
+      }
+      if(attackMode&&selected.size){issueMapOrder(t);return;}
+      if(tile.building){selectedTile={x:tile.x,y:tile.y};selected.clear();renderUI();return;}
       const unit=pointUnit(t.x,t.y);
       if(unit&&unit.owner===slot){if(e.shiftKey)selected.has(unit.id)?selected.delete(unit.id):selected.add(unit.id);else selected=new Set([unit.id]);selectedTile=null;renderUI();return;}
-      if(unit&&unit.owner!==slot){selectedTile={x:t.x,y:t.y,enemyUnit:unit.id};renderUI();return;}
+      if(unit&&unit.owner!==slot){selectedTile={x:t.x,y:t.y,enemyUnit:unit.id};selected.clear();renderUI();return;}
       selectedTile={x:t.x,y:t.y};selected.clear();renderUI();
     }
     canvas.addEventListener('dblclick',e=>{if(!state)return;const t=screenToTile(e),u=pointUnit(t.x,t.y);if(!u||u.owner!==slot)return;const same=state.units.filter(x=>x.owner===slot&&x.type===u.type&&tileState(Math.floor(x.x),Math.floor(x.y))?.visible);selected=new Set(same.map(x=>x.id));renderUI()});
-    canvas.addEventListener('contextmenu',e=>{e.preventDefault();if(!state||state.ended)return;const t=screenToTile(e),tile=tileState(t.x,t.y);if(!tile||tile.unseen||!tile.visible)return;
-      if(pendingBuild){command('build',{building:pendingBuild,x:t.x,y:t.y});pendingBuild=null;renderUI();return;}
-      if(!selected.size)return showToast('先選取我方單位。');const chosen=ownSelected();if(!chosen.length)return;
-      const enemy=state.units.find(u=>u.owner!==slot&&Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y);
-      if(enemy){command('attack',{x:t.x,y:t.y});attackMode=false;$('attackMode').classList.remove('active');return;}
-      if(chosen.every(u=>u.type==='villager')&&tile.resource&&tile.amount>0){command('gather',{x:t.x,y:t.y});return;}
-      if(attackMode){command('attack',{x:t.x,y:t.y});attackMode=false;$('attackMode').classList.remove('active');return;}
-      command('move',{x:t.x,y:t.y});
-    });
+    function issueMapOrder(point){
+      if(!state||state.ended)return;
+      const tile=targetTile(point);
+      if(!tile?.visible)return showToast('請先派部隊偵察目標。');
+      const {x,y}=tile,chosen=ownSelected();
+      if(!chosen.length)return showToast('先選取我方單位。');
+      const enemy=state.units.some(u=>u.owner!==slot&&Math.floor(u.x)===x&&Math.floor(u.y)===y);
+      if(attackMode||enemy||(tile.building&&tile.building.owner!==slot)){
+        command('attack',{x,y});attackMode=false;renderUI();return;
+      }
+      if(chosen.every(u=>u.type==='villager')&&tile.resource&&tile.amount>0){command('gather',{x,y});return;}
+      command('move',{x,y});
+    }
     window.addEventListener('keydown',event=>{
       if(event.key==='Escape'&&!guide.classList.contains('hidden')){closeGuide();return;}
       if($('game').inert||event.target.matches('input,textarea,[contenteditable]'))return;
@@ -759,7 +785,9 @@
       if(!canTrain)return;
       for(const button of holder.children)button.disabled=!!building.underConstruction;
       const queue=building.queue??[];
-      $('queueInfo').textContent=building.underConstruction?'施工中':queue.length?`生產中 · ${queue.map(q=>`${U[q.unit].name} ${Math.ceil(q.remaining)}秒`).join('、')}`:'';
+      $('queueInfo').textContent=building.underConstruction
+        ?`施工中 · ${Math.floor(building.progress/building.buildTime*100)}%`
+        :queue.length?queue.map(q=>`${U[q.unit].name} · ${q.remaining>0?`${Math.ceil(q.remaining)} 秒`:'已完成，等待出口淨空'}`).join('、'):'選擇要訓練的單位';
     }
 
     function formatTime(s){s=Math.floor(s||0);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
@@ -844,11 +872,14 @@
       px(x-size*.3,y-3,size*.6,3,'rgba(37,49,43,.27)');
       drawAtlasSprite(terrainAtlas,sprite,x-size/2,y-size*.875,size,size,3,2);
     }
+    function buildingSpriteBounds(b,x,y){
+      const size={base:56,barracks:46,tower:47,farm:41,gather:40}[b.type];
+      return {size,left:x+(TILE-size)/2,top:y+TILE-2-size*.875};
+    }
     function drawBuilding(b,x,y,owner){
       const team=COLORS[owner],construction=b.underConstruction;
       const sprite=construction?5:BUILDING_SPRITES[b.type];
-      const size={base:56,barracks:46,tower:47,farm:41,gather:40}[b.type];
-      const left=x+(TILE-size)/2,top=y+TILE-2-size*.875;
+      const {size,left,top}=buildingSpriteBounds(b,x,y);
       drawAtlasSprite(buildingAtlas,sprite,left,top,size,size,3,2);
       px(x+TILE/2-4,top+3,8,3,team);
       if(construction||b.hp<b.maxHp){
@@ -949,14 +980,24 @@
     function draw(){if(!canvas.width||!state)return;ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.imageSmoothingEnabled=false;ctx.setTransform(dpr*camera.zoom,0,0,dpr*camera.zoom,dpr*(viewW/2-camera.x*TILE*camera.zoom),dpr*(viewH/2-camera.y*TILE*camera.zoom));drawSea();
       for(const t of state.tiles){if(t.unseen&&t.terrain!=='water'){drawFogTile(t);continue}drawTerrain(t)}
       drawShorelines();
-      for(const t of state.tiles)if(!t.unseen&&['forest','stone','gold','berry'].includes(t.terrain))drawResource(t);
-      const buildings=state.tiles.filter(t=>!t.unseen&&t.building).sort((a,b)=>a.y-b.y||a.x-b.x);for(const t of buildings)drawBuilding(t.building,t.x*TILE,t.y*TILE,t.building.owner);
-      for(const t of state.tiles)if(t.remembered)px(t.x*TILE,t.y*TILE,TILE,TILE,'rgba(12,28,29,.34)');
-      const now=performance.now();
-      const units=state.units.map(u=>({u,pos:visualPosition(u,now)}));
-      units.sort((a,b)=>(a.pos.y-b.pos.y)*TILE+a.pos.offsetY-b.pos.offsetY);
+      const scene=[],now=performance.now();
       const clock=state.elapsed+Math.max(0,(now-state.receivedAt)/1000);
-      for(const {u,pos} of units)drawUnit(u,pos,clock);
+      for(const t of state.tiles){
+        if(t.remembered)px(t.x*TILE,t.y*TILE,TILE,TILE,'rgba(12,28,29,.34)');
+        if(!t.unseen&&(t.building||t.resource))scene.push({depth:t.y*TILE+25,t});
+      }
+      for(const u of state.units){
+        const pos=visualPosition(u,now);
+        scene.push({depth:pos.y*TILE+pos.offsetY+3,u,pos});
+      }
+      scene.sort((a,b)=>a.depth-b.depth);
+      for(const {t,u,pos} of scene){
+        if(u){drawUnit(u,pos,clock);continue;}
+        ctx.globalAlpha=t.remembered?.66:1;
+        if(t.building)drawBuilding(t.building,t.x*TILE,t.y*TILE,t.building.owner);
+        else drawResource(t);
+        ctx.globalAlpha=1;
+      }
       drawEffects(clock);
       if(selectedTile){const x=selectedTile.x*TILE,y=selectedTile.y*TILE;ctx.strokeStyle='#fff0a5';ctx.lineWidth=2/camera.zoom;ctx.setLineDash([4/camera.zoom,3/camera.zoom]);ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);ctx.setLineDash([])}
       if(drag?.select&&drag.moved){const r=canvas.getBoundingClientRect(),x1=drag.x-r.left,y1=drag.y-r.top,x2=(drag.currentX||drag.x)-r.left,y2=(drag.currentY||drag.y)-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.strokeStyle='#fff0a5';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));ctx.setLineDash([])}drawMinimap()
