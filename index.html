@@ -468,9 +468,9 @@
           const changes=message.tileChanges??message.tiles;
           for(const tile of changes){
             const i=tile.y*SIZE+tile.x,old=state?.tiles[i];
-            const terrainChanged=!message.tileChanges||old?.terrain!==tile.terrain||old?.unseen!==tile.unseen||old?.owner!==tile.owner;
+            const terrainChanged=!message.tileChanges||old?.terrain!==tile.terrain||old?.unseen!==tile.unseen;
             if(terrainChanged||old?.remembered!==tile.remembered)dirtyTiles.add(i);
-            if(terrainChanged||old?.building?.id!==tile.building?.id)mapOverviewDirty=true;
+            if(terrainChanged||old?.owner!==tile.owner||old?.building?.id!==tile.building?.id)mapOverviewDirty=true;
             message.tiles[i]=tile;
           }
           smoothState(message);
@@ -1056,12 +1056,6 @@
           px(x+6,y+9,1,4,'#4b7c49');
           px(x+5,y+8,3,2,'#f3d486');
         }
-      }
-      if(t.owner>=0){
-        ctx.globalAlpha=.13;px(x,y,TILE,TILE,COLORS[t.owner]);ctx.globalAlpha=1;
-        px(x+2,y+TILE-2,TILE-4,2,COLORS[t.owner]);
-        px(x+2,y+2,4,2,COLORS[t.owner]);
-        px(x+TILE-6,y+2,4,2,COLORS[t.owner]);
       }
     }
     function drawFogTile(t){
