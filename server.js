@@ -25,12 +25,12 @@ const BUILDING_DPS=Object.fromEntries(Object.entries(UNIT).filter(([,unit])=>uni
 ]));
 const BUILDING = {
   base: {name:'主基地',hp:2400,vision:7},
-  barracks: {name:'兵營',hp:840,vision:2,cost:{wood:100,stone:35},time:12,buildOn:'land'},
-  tower: {name:'防禦塔',hp:620,vision:7,cost:{wood:42,stone:58},time:11,buildOn:'land',range:5.8,damage:18,interval:1.1},
-  wall: {name:'城牆',hp:630,vision:1,cost:{stone:20},time:5,buildOn:'land'},
-  gate: {name:'城門',hp:480,vision:2,cost:{wood:25,stone:25},time:7,buildOn:'land'},
-  farm: {name:'農場',hp:420,vision:2,cost:{wood:52},time:9,buildOn:'land',foodRate:0.19},
-  gather: {name:'採集站',hp:500,vision:2,cost:{wood:45,stone:18},time:9,buildOn:'resource'}
+  barracks: {name:'兵營',hp:840,vision:2,cost:{wood:100,stone:35},time:6,buildOn:'land'},
+  tower: {name:'防禦塔',hp:620,vision:7,cost:{wood:42,stone:58},time:6,buildOn:'land',range:5.8,damage:18,interval:1.1},
+  wall: {name:'城牆',hp:630,vision:1,cost:{stone:20},time:2,buildOn:'land'},
+  gate: {name:'城門',hp:480,vision:2,cost:{wood:25,stone:25},time:3,buildOn:'land'},
+  farm: {name:'農場',hp:420,vision:2,cost:{wood:52},time:4,buildOn:'land',foodRate:0.19},
+  gather: {name:'採集站',hp:500,vision:2,cost:{wood:45,stone:18},time:4,buildOn:'resource'}
 };
 const RESOURCE_META = {
   wood:{name:'木材',icon:'🌲',amount:[90,145]},
@@ -138,7 +138,7 @@ function serialize(g,p,previousTiles){
   const vis=g.visible[p],mem=g.memories[p];
   for(const i of vis){
     const {x,y,terrain,resource,amount,building:b}=g.tiles[i];
-    mem[i]={x,y,terrain,resource,amount,building:b?{id:b.id,type:b.type,open:b.open,owner:b.owner,hp:b.hp,maxHp:b.maxHp,underConstruction:b.underConstruction,progress:b.progress,buildTime:b.buildTime}:null};
+    mem[i]={x,y,terrain,resource,amount,building:b?{id:b.id,type:b.type,open:b.open,closeRequested:!!b.closeRequested,owner:b.owner,hp:b.hp,maxHp:b.maxHp,underConstruction:b.underConstruction,progress:b.progress,buildTime:b.buildTime}:null};
   }
   const tiles=[];
   for(let i=0;i<UNEXPLORED.length;i++){
@@ -158,7 +158,7 @@ function serialize(g,p,previousTiles){
     order:u.owner===p&&u.order?{kind:u.order.kind,target:u.order.tile}:null
   }));
   const effects=g.effects.filter(e=>(e.owner===p||sees(e.x,e.y))&&(e.tx===undefined||sees(e.tx,e.ty)));
-  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,open:t.building.open,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
+  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,open:t.building.open,closeRequested:!!t.building.closeRequested,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
   const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
@@ -214,12 +214,10 @@ function applyCommand(g,p,msg){
   } else if(msg.action==='gate'){
     if(!inside(msg.x,msg.y)||typeof msg.open!=='boolean')return;
     const gate=g.tiles[idx(msg.x,msg.y)].building;
-    if(gate?.type!=='gate'||gate.owner!==p||gate.underConstruction||gate.open===msg.open)return;
-    if(!msg.open&&g.units.some(u=>Math.floor(u.x)===msg.x&&Math.floor(u.y)===msg.y)){
-      sendTo(g,p,{type:'notice',text:'城門下有單位，請清空門口再關門。'});
-      return;
-    }
-    gate.open=msg.open;
+    if(gate?.type!=='gate'||gate.owner!==p||gate.underConstruction)return;
+    gate.closeRequested=!msg.open&&g.units.some(u=>Math.floor(u.x)===msg.x&&Math.floor(u.y)===msg.y);
+    if(gate.closeRequested)sendTo(g,p,{type:'notice',text:'已下達關門，單位離開門口後會自動關閉。'});
+    else gate.open=msg.open;
   } else if(msg.action==='build'){
     const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type)||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
     if(!g.visible[p].has(i)){sendTo(g,p,{type:'notice',text:'只能在目前視野內施工。'});return;}
@@ -368,6 +366,9 @@ function spawnTrainedUnit(g,t,type){
 }
 function tickBuildings(g,dt){
   for(const t of g.tiles){const b=t.building;if(!b)continue;
+    if(b.type==='gate'&&b.closeRequested&&!g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){
+      b.open=false;b.closeRequested=false;
+    }
     if(b.underConstruction){const builders=g.units.filter(u=>u.owner===b.owner&&u.order?.kind==='build'&&u.order.buildingId===b.id).length;if(!builders&&b.progress>0)b.progress=Math.max(0,b.progress-dt*.2);continue;}
     if(b.type==='farm')g.players[b.owner].resources.food+=BUILDING.farm.foodRate*dt;
     if(b.queue?.length){

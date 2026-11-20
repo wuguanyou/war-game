@@ -286,6 +286,7 @@
               <button class="game-button" id="orderMode" type="button">➜ 下達指令</button>
               <button class="game-button" id="attackMode" type="button" title="快捷鍵 X">◎ 指定攻擊</button>
               <button class="game-button" id="stopUnits" type="button" title="快捷鍵 Z">■ 停止</button>
+              <button class="game-button" id="clearSelection" type="button" title="快捷鍵 Esc">取消選取</button>
             </div>
             <div class="unit-list" id="unitList"></div>
           </div>
@@ -354,7 +355,7 @@
     </div>
   </main>
 
-  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵點選單位或建築，拖曳框選部隊。按住 Shift 可加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。點自家城門可開關。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-card"><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
   <div class="toast" id="toast" role="status"></div>
 
@@ -614,6 +615,9 @@
     $('orderMode').onclick=()=>setTargetMode('order');
     function stopUnits(){if(selected.size){cancelTargetMode();command('stop');}}
     $('stopUnits').onclick=stopUnits;
+    $('clearSelection').onclick=()=>{
+      selected.clear();selectedTile=null;cancelTargetMode();renderUI();
+    };
     $('zoomIn').onclick=()=>zoomAt(1.18);$('zoomOut').onclick=()=>zoomAt(1/1.18);$('zoomHome').onclick=()=>{camera.x=SIZE/2;camera.y=SIZE/2;fitZoom();draw()};
     function resize(){const r=canvas.getBoundingClientRect();dpr=Math.min(window.devicePixelRatio||1,2);viewW=r.width;viewH=r.height;canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);if(!camera.ready){fitZoom();camera.ready=true}resizeMinimap();draw()}
     let miniDpr=1;function resizeMinimap(){const r=miniCanvas.getBoundingClientRect();miniDpr=Math.min(window.devicePixelRatio||1,2);miniCanvas.width=Math.max(1,Math.round(r.width*miniDpr));miniCanvas.height=Math.max(1,Math.round(r.height*miniDpr));overviewCache.width=miniCanvas.width;overviewCache.height=miniCanvas.height;mapOverviewDirty=true}
@@ -729,8 +733,9 @@
       const own=building.owner===slot;
       const details=[own?'我方':'敵方',`耐久 ${Math.ceil(building.hp)} / ${building.maxHp}`];
       if(building.underConstruction)details.push(`施工 ${Math.floor(building.progress/building.buildTime*100)}%`);
-      else if(building.type==='gate')details.push(building.open?'城門已開啟':'城門已關閉');
+      else if(building.type==='gate')details.push(building.closeRequested?'等待單位離開後關門':building.open?'城門已開啟':'城門已關閉');
       if(own&&tile.visible){
+        if(building.type==='gate')details.push('右鍵開關城門');
         const next=state.buildings?.find(b=>b.id===building.id)?.queue?.[0];
         if(next)details.push(next.remaining>0?`生產中：${U[next.unit].name} · ${Math.ceil(next.remaining)} 秒`:'已完成，等待出口淨空');
         if(TRAINING[building.type])details.push(building.underConstruction?'完工後可招募':'右鍵開啟招募');
@@ -811,6 +816,14 @@
       }
       if((attackMode||orderMode)&&selected.size){issueMapOrder(t);return;}
       const unit=pointUnit(t);
+      if(unit?.owner===slot&&(!tile?.building||tile.building.type==='gate'&&tile.building.open)){
+        if(e.shiftKey)selected.has(unit.id)?selected.delete(unit.id):selected.add(unit.id);
+        else selected=new Set([unit.id]);
+        selectedTile=null;renderUI();return;
+      }
+      if(!e.shiftKey&&selected.size&&(!tile?.building||tile.building.owner!==slot||tile.building.type==='gate'&&tile.building.open)){
+        issueMapOrder(t,false);return;
+      }
       if(!unit&&(!tile||tile.unseen)){
         if(!e.shiftKey){selected.clear();selectedTile=null;renderUI();}
         return;
@@ -820,13 +833,16 @@
       }
       if(unit&&unit.owner===slot){if(e.shiftKey)selected.has(unit.id)?selected.delete(unit.id):selected.add(unit.id);else selected=new Set([unit.id]);selectedTile=null;renderUI();return;}
       if(unit&&unit.owner!==slot){selectedTile={x:Math.floor(unit.x),y:Math.floor(unit.y),enemyUnit:unit.id};selected.clear();renderUI();return;}
-      selectedTile={x:t.x,y:t.y};selected.clear();renderUI();
+      if(!e.shiftKey){selectedTile={x:t.x,y:t.y};selected.clear();renderUI();}
     }
     canvas.addEventListener('dblclick',e=>{if(!state)return;const t=screenToTile(e),u=pointUnit(t);if(!u||u.owner!==slot)return;const same=state.units.filter(x=>x.owner===slot&&x.type===u.type&&tileState(Math.floor(x.x),Math.floor(x.y))?.visible);selected=new Set(same.map(x=>x.id));renderUI()});
-    function issueMapOrder(point){
+    function issueMapOrder(point,inspectBuilding=true){
       if(!state||state.ended)return;
       const ground=tileState(point.x,point.y),tile=targetTile(point),unit=pointUnit(point);
-      if(!attackMode&&!orderMode&&openRecruitmentAt(tile))return;
+      if(inspectBuilding&&!attackMode&&!orderMode&&tile?.building?.type==='gate'&&tile.building.owner===slot){
+        toggleGate(tile);return;
+      }
+      if(inspectBuilding&&!attackMode&&!orderMode&&openRecruitmentAt(tile))return;
       const chosen=ownSelected();
       if(!chosen.length)return showToast('先選取我方單位。');
       const soldier=chosen.some(u=>u.type!=='villager'),villagers=chosen.filter(u=>u.type==='villager');
@@ -903,7 +919,7 @@
       $('recruitFromBuilding').hidden=hasUnits||building?.owner!==slot||!TRAINING[building.type]||state.ended;
       const gateToggle=$('gateToggle');
       gateToggle.hidden=hasUnits||building?.type!=='gate'||building.owner!==slot||building.underConstruction||state.ended;
-      if(!gateToggle.hidden)gateToggle.textContent=building.open?'關城門':'開城門';
+      if(!gateToggle.hidden)gateToggle.textContent=building.closeRequested?'取消自動關門':building.open?'關城門':'開城門';
       $('commandDock').hidden=!hasUnits&&(!tile||tile.unseen);
       $('unitActions').hidden=!hasUnits;
       const directBuild=!hasUnits&&canBuildFromTile(tile);
@@ -986,12 +1002,15 @@
         if(button.lastElementChild.textContent!==label)button.lastElementChild.textContent=label;
       });
     }
-    $('gateToggle').onclick=()=>{
-      const tile=selectedTile&&tileState(selectedTile.x,selectedTile.y),gate=tile?.building;
-      if(gate?.type==='gate'&&gate.owner===slot&&!gate.underConstruction)send('command',{command:{action:'gate',x:tile.x,y:tile.y,open:!gate.open}});
-    };
+    function toggleGate(tile){
+      const gate=tile?.building;
+      if(gate?.type!=='gate'||gate.owner!==slot)return;
+      if(gate.underConstruction){showToast('城門完工後即可開關。');return;}
+      send('command',{command:{action:'gate',x:tile.x,y:tile.y,open:gate.closeRequested||!gate.open}});
+    }
+    $('gateToggle').onclick=()=>{if(selectedTile)toggleGate(tileState(selectedTile.x,selectedTile.y));};
     function setupBuildActions(){
-      const builds=[['barracks','木100 石35',12],['tower','木42 石58',11],['farm','木52',9],['gather','木45 石18',9],['wall','石20',5],['gate','木25 石25',7]];
+      const builds=[['barracks','木100 石35',6],['tower','木42 石58',6],['farm','木52',4],['gather','木45 石18',4],['wall','石20',2],['gate','木25 石25',3]];
       for(const [type,cost,time] of builds){
         const button=document.createElement('button');
         button.className='game-button';
