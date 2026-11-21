@@ -4,6 +4,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const accounts = require('./accounts');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8080);
@@ -40,6 +41,35 @@ const RESOURCE_META = {
 };
 const rooms = new Map();
 const sockets = new Set();
+const pendingResults = new Map();
+function queueResult(room) {
+  const g=room.game;
+  if(!g?.ended||g.resultQueued)return;
+  g.resultQueued=true;
+  const match={
+    id:g.matchId,mode:room.ai?'ai':'pvp',winner:g.winner,duration:g.elapsed,finishedAt:Date.now(),
+    players:g.players.map((p,i)=>({id:room.accountIds[i],name:p.name}))
+  };
+  if(!match.players.some(p=>p.id))return;
+  pendingResults.set(match.id,{match,room,saving:false});
+  saveResults();
+}
+async function saveResults(){
+  for(const [id,entry] of pendingResults){
+    if(entry.saving)continue;
+    entry.saving=true;
+    try{
+      await accounts.recordMatch(entry.match);
+      pendingResults.delete(id);
+      entry.room.game.historySaved=true;
+      broadcast(entry.room,{type:'historySaved'});
+    }catch{
+      entry.saving=false;
+      broadcast(entry.room,{type:'historySavePending'});
+      console.error('Match history save deferred:',id);
+    }
+  }
+}
 let nextUnit = 1, nextBuilding = 1;
 
 function rngFor(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return ((t^(t>>>14))>>>0)/4294967296;};}
@@ -163,7 +193,7 @@ function serialize(g,p,previousTiles){
   const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
   const mapUpdate=previousTiles?{tileChanges:tiles}:{tiles};
-  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,historySaved:!!g.historySaved,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -433,6 +463,7 @@ function broadcast(room,payload){for(const ws of room.players)if(ws)wsSend(ws,pa
 function broadcastState(room){
   const g=room.game;
   if(!g)return;
+  queueResult(room);
   updateVision(g);
   for(let p=0;p<2;p++){
     const ws=room.players[p];
@@ -452,6 +483,7 @@ function broadcastLobby(room){
 function randCode(){return crypto.randomBytes(3).toString('hex').toUpperCase();}
 function safeName(s){return String(s||'玩家').replace(/[<>\u0000-\u001f]/g,'').slice(0,16)||'玩家';}
 function joinRoom(ws,msg){
+  if(ws.account)msg.name=ws.account.name;
   let room,slot=-1;
   if(msg.type==='practice'){
     const id=randCode();room={id,players:[ws,null],tokens:[crypto.randomBytes(12).toString('hex'),null],names:[safeName(msg.name),'像素守軍'],ai:true,game:null,disconnectAt:null};rooms.set(id,room);slot=0;
@@ -463,6 +495,7 @@ function joinRoom(ws,msg){
     if(msg.token){
       slot=room.tokens.findIndex(token=>token===msg.token);
       if(slot<0){wsSend(ws,{type:'error',text:'無法恢復原本的座位，請重新加入房間。'});return;}
+      if(room.accountIds?.[slot]&&room.accountIds[slot]!==ws.account?.id){wsSend(ws,{type:'error',text:'請登入原本的帳號以恢復對局。'});return;}
       if(room.players[slot]&&room.players[slot]!==ws){const previous=room.players[slot];room.players[slot]=null;previous.end();}
     }
     if(slot<0)slot=room.players.findIndex((x,i)=>!x&&i===1&&!room.ai);
@@ -470,12 +503,14 @@ function joinRoom(ws,msg){
     room.players[slot]=ws;room.names[slot]=safeName(msg.name);room.disconnectAt=null;if(room.game)room.game.players[slot].name=room.names[slot];
   }else return;
   ws.room=room;ws.slot=slot;
+  room.accountIds??=[null,null];
+  if(!room.game)room.accountIds[slot]=ws.account?.id??null;
   ws.tileDeltas=msg.tileDeltas===true;
   if(!room.tokens[slot])room.tokens[slot]=crypto.randomBytes(12).toString('hex');
   wsSend(ws,{type:'joined',room:room.id,slot,token:room.tokens[slot],ai:room.ai,name:room.names[slot]});
   broadcastLobby(room);
   if(room.ai||room.players[0]&&room.players[1]){
-    if(!room.game){room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.ai=room.ai;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成，主基地耐久歸零為唯一勝利條件。');}
+    if(!room.game){room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.matchId=crypto.randomUUID();room.game.ai=room.ai;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成，主基地耐久歸零為唯一勝利條件。');}
     broadcastState(room);
   }
 }
@@ -485,10 +520,15 @@ function handleMessage(ws,text){let msg;try{msg=JSON.parse(text);}catch{return;}
   else if(msg.type==='ping')wsSend(ws,{type:'pong',now:Date.now()});
 }
 
-// Small RFC 6455 server so the prototype runs without downloading dependencies.
+// Small RFC 6455 implementation used by the game server.
 function wsSend(ws,obj){if(!ws||ws.destroyed||ws.writableEnded)return;try{const data=Buffer.from(JSON.stringify(obj));let head;if(data.length<126){head=Buffer.from([0x81,data.length]);}else if(data.length<65536){head=Buffer.alloc(4);head[0]=0x81;head[1]=126;head.writeUInt16BE(data.length,2);}else{head=Buffer.alloc(10);head[0]=0x81;head[1]=127;head.writeBigUInt64BE(BigInt(data.length),2);}ws.write(Buffer.concat([head,data]));}catch{}}
 function wsFrame(op,payload=Buffer.alloc(0)){const n=payload.length;let h;if(n<126)h=Buffer.from([0x80|op,n]);else if(n<65536){h=Buffer.alloc(4);h[0]=0x80|op;h[1]=126;h.writeUInt16BE(n,2);}else{h=Buffer.alloc(10);h[0]=0x80|op;h[1]=127;h.writeBigUInt64BE(BigInt(n),2);}return Buffer.concat([h,payload]);}
-function upgrade(req,socket,head){
+async function upgrade(req,socket,head){
+  if(!accounts.sameOrigin(req)){socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');return;}
+  socket.on('error',()=>{});
+  try{socket.account=await accounts.identify(req);}
+  catch{socket.end('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n');return;}
+  if(socket.destroyed)return;
   const key=req.headers['sec-websocket-key'];if(!key||req.headers.upgrade?.toLowerCase()!=='websocket'){socket.destroy();return;}
   const accept=crypto.createHash('sha1').update(key+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');
   socket.write(`HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: ${accept}\r\n\r\n`);
@@ -499,8 +539,18 @@ function upgrade(req,socket,head){
 }
 function disconnect(ws){if(ws._appClosed)return;ws._appClosed=true;sockets.delete(ws);const room=ws.room;if(!room||room.players[ws.slot]!==ws)return;room.players[ws.slot]=null;if(room.game&&!room.game.ended){room.disconnectAt=Date.now();broadcast(room,{type:'status',text:'對手連線中斷，戰局暫停等待重連。'});}else if(!room.players.some(Boolean))rooms.delete(room.id);}
 
-const server=http.createServer((req,res)=>{
+const server=http.createServer(async(req,res)=>{
   let pathname='/';try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{}
+  if(pathname.startsWith('/api/')){
+    if(pathname==='/api/logout'&&req.method==='POST'&&accounts.sameOrigin(req)){
+      try{
+        const user=await accounts.identify(req);
+        res.on('finish',()=>{if(res.statusCode===200&&user)for(const socket of sockets)if(socket.account?.id===user.id)socket.end(wsFrame(8));});
+      }catch{}
+    }
+    await accounts.handle(req,res,pathname);
+    return;
+  }
   if(pathname==='/healthz'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});res.end('ok');return;}
   const file=path.resolve(__dirname,pathname==='/'?'index.html':pathname.replace(/^\/+/,'')),relative=path.relative(__dirname,file);
   const allowed=relative==='index.html'||(relative.startsWith(`assets${path.sep}`)&&!relative.startsWith('..')&&!path.isAbsolute(relative));
@@ -510,5 +560,6 @@ const server=http.createServer((req,res)=>{
 });
 server.on('upgrade',upgrade);
 setInterval(()=>{for(const socket of sockets){if(socket.destroyed)continue;if(socket._appWaitingPong){socket.destroy();continue;}socket._appWaitingPong=true;socket.write(wsFrame(9));}},25000);
+setInterval(saveResults,10000);
 setInterval(()=>{const now=Date.now();for(const [id,room]of rooms){if(room.game&&!room.game.ended){const connected=room.ai?!!room.players[0]:!!room.players[0]&&!!room.players[1];if(connected)tickGame(room,TICK/1000);else if(room.disconnectAt&&now-room.disconnectAt>120000){rooms.delete(id);}}else if(!room.players.some(Boolean))rooms.delete(id);}},TICK);
 server.listen(PORT,HOST,()=>console.log(`風起群島伺服器已啟動： http://localhost:${PORT}`));

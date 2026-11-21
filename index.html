@@ -138,7 +138,7 @@
     :where(.lobby-page,.guide-card,.result-card) :is(.control,.guide-card button,.result-card button):hover:not(:disabled){
       background:#dcebd6;border-color:var(--day-green);
     }
-    .lobby-page{position:relative;isolation:isolate;min-height:100vh;min-height:100dvh;background:#f4eed7}
+    .lobby-page{position:relative;isolation:isolate;overflow:clip;min-height:100vh;min-height:100dvh;background:#f4eed7}
     .lobby-scene{position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:61% center}
     .lobby-page::after{content:"";position:absolute;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(90deg,#fff8e5ed 0%,#fff8e5c9 26%,#fff8e538 47%,transparent 63%)}
     .lobby-shell{display:flex;flex-direction:column;min-height:inherit;padding:clamp(16px,3vh,34px) clamp(24px,7vw,120px) 24px}
@@ -229,6 +229,62 @@
 
     }
     @media(prefers-reduced-motion:reduce){.res-name,.toast{transition:none}}
+    .account-card,.history-card{width:min(100%,480px);padding:25px;border:1px solid #b9ab80;border-top:3px solid #d8ad58;border-radius:12px;background:#fff9e9;color:#203d39;box-shadow:0 20px 70px #091c3c66}
+    .account-card h2,.history-card h2{margin:0 0 8px;font-family:"Noto Serif TC","PMingLiU",serif;font-size:25px}
+    .account-card p,.history-card p{color:#46625c;line-height:1.6}
+    .account-card label{display:block;font-size:13px;margin:13px 0 5px}
+    .account-card input{width:100%;padding:11px 12px;border:1px solid #8da593;border-radius:6px;background:#fffefa;color:#203d39;font:inherit}
+    .account-card button,.history-card button{min-height:39px;padding:8px 14px;border:1px solid #7c9786;border-radius:6px;background:#edf4e6;color:#203d39}
+    .account-card button:disabled{opacity:.55;cursor:wait}
+    .account-tabs{display:flex;gap:5px;margin:16px 0 10px}
+    .account-tabs button[aria-selected="true"],.account-card .account-primary{background:#27634c;color:#fffdf5}
+    .account-primary{width:100%;margin-top:18px;font-weight:700}
+    .account-footer{display:flex;justify-content:space-between;gap:8px;margin-top:14px;align-items:center}
+    .account-status{min-height:20px;margin:10px 0 0;font-size:13px;color:#8b4427}
+    #accountModal,#historyModal{z-index:30}
+    .history-card{width:min(100%,680px);max-height:85dvh;overflow:auto}
+    .history-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .history-summary{display:flex;gap:15px;flex-wrap:wrap;padding-block:14px;color:#31584a;border-bottom:1px solid #d6d6ba}
+    .history-list{list-style:none;padding:0;margin:0}
+    .history-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;padding:13px 0;border-bottom:1px solid #dfdfca;align-items:center}
+    .history-row strong{font-size:15px}
+    .history-row small{display:block;color:#566b61;margin-top:4px}
+    .history-win{color:#246446}.history-loss{color:#a14a3b}.history-draw{color:#79602c}
+    .history-opponent{overflow-wrap:anywhere}
+    .result-card{position:relative;overflow:hidden;isolation:isolate;padding:34px 26px;animation:result-enter .65s cubic-bezier(.18,.8,.25,1) both}
+    .result-mark{position:relative;display:grid;place-items:center;width:98px;height:98px;margin:0 auto 18px;border:2px solid currentColor;border-radius:50%;font-size:50px;animation:result-mark .9s ease-out both}
+    .result-mark::before,.result-mark::after{content:"";position:absolute;inset:7px;border:1px solid currentColor;border-radius:50%;opacity:.45}
+    .result-mark::after{inset:-9px;border-style:dashed;animation:crest-orbit 26s linear infinite}
+    .result[data-outcome="win"]{background:radial-gradient(ellipse at 50% 35%,#d6a4468c,#092b36ed)}
+    .result[data-outcome="win"] .result-card{border-color:#cca451;background:linear-gradient(145deg,#fffbe6,#f5e8bc)}
+    .result[data-outcome="win"] .result-mark{color:#ac7220;background:#ffefb8;box-shadow:0 0 45px #e6bd6170}
+    .result[data-outcome="loss"]{background:#111e34e8}
+    .result[data-outcome="loss"] .result-card{border-color:#8495a7;background:linear-gradient(145deg,#e6edf1,#c8d4dc)}
+    .result[data-outcome="loss"] .result-mark{color:#566a83;background:#dce5ee;animation-name:defeat-mark}
+    .result[data-outcome="draw"] .result-mark{color:#7c7559}
+    .result-actions{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+    .result-sparks{position:absolute;z-index:-1;inset:0;pointer-events:none;overflow:hidden}
+    .result-sparks i{position:absolute;left:var(--x);bottom:-12px;width:5px;height:9px;background:#c8a64f;opacity:0;animation:celebrate 3s var(--delay) ease-out 2}
+    .result:not([data-outcome="win"]) .result-sparks{display:none}
+    #resultSave{font-size:12px;min-height:18px}
+    .lobby-scene{animation:sea-breeze 22s ease-in-out infinite alternate}
+    .lobby-content .hero-copy{animation:lobby-reveal .8s ease-out both}
+    .lobby-modes>*{animation:lobby-reveal .7s ease-out both}
+    .lobby-modes>*:nth-child(1){animation-delay:.1s}.lobby-modes>*:nth-child(2){animation-delay:.2s}.lobby-modes>*:nth-child(3){animation-delay:.3s}
+    .waiting-room:not([hidden]){animation:lobby-reveal .45s ease-out both}
+    #waitingTitle::after{content:"";display:inline-block;width:6px;height:6px;margin-left:12px;border-radius:50%;background:#457f62;animation:waiting-pulse 1.6s ease-in-out infinite}
+    @keyframes sea-breeze{from{transform:scale(1.015) translateX(0)}to{transform:scale(1.045) translateX(-.5%)}}
+    @keyframes lobby-reveal{from{opacity:0;transform:translateY(13px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes waiting-pulse{50%{opacity:.25;box-shadow:0 0 0 5px #457f621c}}
+    @keyframes result-enter{from{opacity:0;transform:translateY(25px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes result-mark{from{opacity:0;transform:scale(.55) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+    @keyframes defeat-mark{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes crest-orbit{to{transform:rotate(360deg)}}
+    @keyframes celebrate{0%{opacity:0;transform:translateY(0) rotate(0)}20%{opacity:.85}100%{opacity:0;transform:translateY(-420px) rotate(190deg)}}
+    @media(prefers-reduced-motion:reduce){
+      .lobby-scene,.lobby-content .hero-copy,.lobby-modes>*,.waiting-room:not([hidden]),#waitingTitle::after,.result-card,.result-mark,.result-mark::after,.result-sparks i{animation:none}
+    }
+    @media(max-width:620px){.lobby-top-tools{flex-wrap:wrap;justify-content:flex-end}.history-row{grid-template-columns:45px minmax(0,1fr)}.history-row>small{grid-column:2}.account-card,.history-card{padding:18px}}
 
   </style>
 </head>
@@ -250,6 +306,7 @@
           <div class="menu-content">
             <p>房間 <b id="roomCodeTop">—</b></p>
             <button class="control" id="showGuide">操作指南</button>
+            <button class="control" id="showHistoryGame">歷史戰績</button>
             <button class="control" id="copyRoom">分享房間</button>
             <button class="control" id="leaveRoom">返回大廳</button>
           </div>
@@ -323,6 +380,9 @@
         <div class="lobby-top-tools">
           <span class="connection-chip"><i class="connection" id="lobbyConnectionDot" aria-hidden="true"></i><span id="lobbyConnectionText">未連線</span></span>
           <button class="control" id="lobbyGuide" type="button">操作指南</button>
+          <button class="control" id="showHistory" type="button">歷史戰績</button>
+          <button class="control" id="accountButton" type="button">登入／註冊</button>
+          <button class="control" id="logoutButton" type="button" hidden>登出</button>
         </div>
       </header>
       <div class="lobby-content">
@@ -356,7 +416,42 @@
   </main>
 
   <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
-  <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle"><div class="result-card"><h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><button id="resultAgain">返回大廳</button></div></div>
+  <div class="modal hidden" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+    <div class="account-card">
+      <h2 id="accountTitle">指揮官登入</h2>
+      <p>登入後保存每場勝敗與對戰紀錄。</p>
+      <div class="account-tabs" role="tablist" aria-label="帳號操作">
+        <button id="loginTab" type="button" role="tab" aria-selected="true">登入</button>
+        <button id="registerTab" type="button" role="tab" aria-selected="false">建立帳號</button>
+      </div>
+      <form id="accountForm">
+        <label for="accountUsername">帳號</label><input id="accountUsername" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" aria-describedby="accountRules" required>
+        <small id="accountRules">3–24 位英數或底線</small>
+        <div id="registerNameField" hidden><label for="accountName">指揮官名稱</label><input id="accountName" name="name" autocomplete="nickname" maxlength="16"></div>
+        <label for="accountPassword">密碼</label><input id="accountPassword" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+        <button class="account-primary" id="accountSubmit" type="submit">登入</button>
+      </form>
+      <p class="account-status" id="accountStatus" role="status"></p>
+      <div class="account-footer"><button type="button" id="guestPlay">先以訪客遊玩</button><button type="button" id="closeAccount">關閉</button></div>
+    </div>
+  </div>
+  <div class="modal hidden" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
+    <div class="history-card">
+      <div class="history-head"><h2 id="historyTitle">歷史戰績</h2><button id="closeHistory" type="button">返回</button></div>
+      <div class="history-summary" id="historySummary"></div>
+      <p id="historyStatus" role="status"></p>
+      <ol class="history-list" id="historyList"></ol>
+      <button id="historyRetry" type="button" hidden>重新載入</button>
+    </div>
+  </div>
+  <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+    <div class="result-card">
+      <div class="result-sparks" id="resultSparks" aria-hidden="true"></div>
+      <div class="result-mark" id="resultMark" aria-hidden="true">⚑</div>
+      <h2 id="resultTitle">戰局結束</h2><p id="resultText"></p><p id="resultSave" role="status"></p>
+      <div class="result-actions"><button id="resultHistory" type="button">查看戰績</button><button id="resultAgain">返回大廳</button></div>
+    </div>
+  </div>
   <div class="toast" id="toast" role="status"></div>
 
   <script>
@@ -500,7 +595,7 @@
           selected=new Set([...selected].filter(id=>message.units.some(u=>u.id===id&&u.owner===slot)));
           $('lobbyPage').hidden=true;
           $('game').hidden=false;
-          $('game').inert=!!message.ended||!guide.classList.contains('hidden');
+          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
           $('result').classList.toggle('show',!!message.ended);
           if(entering){
             const base=message.buildings.find(b=>b.type==='base');
@@ -509,11 +604,20 @@
             if(!$('game').inert)canvas.focus();
           }
           if(message.ended){
+            const outcome=message.winner<0?'draw':message.winner===slot?'win':'loss';
+            $('result').dataset.outcome=outcome;
+            setText('resultMark',outcome==='win'?'⚑':outcome==='loss'?'⚔':'◇');
             $('resultTitle').textContent=message.winner===-1?'戰局平手':message.winner===slot?'戰區勝利':'主基地失守';
             $('resultText').textContent=message.winner===-1?'雙方主基地同時摧毀。':message.winner===slot?'你摧毀了敵方主基地。':'你的主基地遭到摧毀。';
             if(finished){guide.classList.add('hidden');$('resultAgain').focus()}
+            setText('resultSave',currentAccount?(message.historySaved?'戰績已保存':'正在保存戰績…'):'訪客對局。登入帳號後可保存之後的戰績。');
           }
           renderUI();
+        }else if(message.type==='historySaved'){
+          if(currentAccount)setText('resultSave','戰績已保存');
+          if(!$('historyModal').classList.contains('hidden'))loadHistory();
+        }else if(message.type==='historySavePending'){
+          if(currentAccount)setText('resultSave','戰績暫未保存，伺服器正在重試。');
         }else if(message.type==='notice')showToast(message.text);
         else if(message.type==='status'){$('serverHint').textContent=message.text;showToast(message.text)}
         else if(message.type==='error'){
@@ -1378,7 +1482,186 @@
       if(selectedTile){const x=selectedTile.x*TILE,y=selectedTile.y*TILE;ctx.strokeStyle='#fff0a5';ctx.lineWidth=2/camera.zoom;ctx.setLineDash([4/camera.zoom,3/camera.zoom]);ctx.strokeRect(x+2,y+2,TILE-4,TILE-4);ctx.setLineDash([])}
       if(drag?.select&&drag.moved){const r=canvas.getBoundingClientRect(),x1=drag.x-r.left,y1=drag.y-r.top,x2=(drag.currentX||drag.x)-r.left,y2=(drag.currentY||drag.y)-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.strokeStyle='#fff0a5';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));ctx.setLineDash([])}drawMinimap()
     }
-    setupBuildActions();resize();connect();requestAnimationFrame(loop);
+    let currentAccount=null,registerMode=false,authBusy=false,historyRequest=0;
+    let accountReturnFocus=null,historyReturnFocus=null;
+    async function accountApi(path,body){
+      const response=await fetch(path,{
+        method:body?'POST':'GET',credentials:'same-origin',signal:AbortSignal.timeout(12000),
+        ...(body?{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})
+      });
+      const data=await response.json();
+      if(!response.ok)throw new Error(data.error||'服務暫時無法連線。');
+      return data;
+    }
+    function lockForAccountModal(){
+      const modalOpen=!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
+      $('lobbyPage').inert=modalOpen||!guide.classList.contains('hidden');
+      $('game').inert=modalOpen||!state||!!state.ended||!guide.classList.contains('hidden');
+      $('result').inert=modalOpen;
+      keys.clear();
+    }
+    function showAccount(){
+      accountReturnFocus=document.activeElement;
+      $('accountModal').classList.remove('hidden');
+      lockForAccountModal();
+      $('accountUsername').focus();
+    }
+    function closeAccount(){
+      if(authBusy)return;
+      $('accountModal').classList.add('hidden');
+      $('accountPassword').value='';
+      sessionStorage.setItem('windwardVisited','true');
+      lockForAccountModal();
+      if(accountReturnFocus?.isConnected)accountReturnFocus.focus();
+    }
+    function selectAccountTab(register){
+      registerMode=register;
+      $('loginTab').setAttribute('aria-selected',!register);
+      $('registerTab').setAttribute('aria-selected',register);
+      $('registerNameField').hidden=!register;
+      $('accountPassword').autocomplete=register?'new-password':'current-password';
+      setText('accountTitle',register?'建立指揮官帳號':'指揮官登入');
+      setText('accountSubmit',register?'建立並登入':'登入');
+      setText('accountStatus','');
+    }
+    $('loginTab').onclick=()=>selectAccountTab(false);
+    $('registerTab').onclick=()=>selectAccountTab(true);
+    $('accountButton').onclick=()=>{
+      if(currentAccount)showHistory();
+      else showAccount();
+    };
+    $('guestPlay').onclick=closeAccount;
+    $('closeAccount').onclick=closeAccount;
+    $('accountForm').onsubmit=async event=>{
+      event.preventDefault();
+      if(authBusy)return;
+      authBusy=true;
+      for(const button of $('accountModal').querySelectorAll('button'))button.disabled=true;
+      setText('accountStatus',registerMode?'正在建立帳號…':'正在登入…');
+      try{
+        await accountApi(registerMode?'/api/register':'/api/login',{
+          username:$('accountUsername').value,password:$('accountPassword').value,name:$('accountName').value
+        });
+        clearSavedRoom();
+        sessionStorage.setItem('windwardVisited','true');
+        location.reload();
+      }catch(error){
+        setText('accountStatus',error.name==='TimeoutError'?'登入連線逾時，請重試。':error.message);
+      }finally{
+        authBusy=false;
+        for(const button of $('accountModal').querySelectorAll('button'))button.disabled=false;
+        $('accountPassword').value='';
+      }
+    };
+    $('logoutButton').onclick=async()=>{
+      $('logoutButton').disabled=true;
+      try{
+        await accountApi('/api/logout',{});
+        clearSavedRoom();
+        location.reload();
+      }catch(error){showToast(error.message);$('logoutButton').disabled=false;}
+    };
+    async function loadHistory(){
+      const request=++historyRequest;
+      setText('historyStatus','正在讀取戰績…');
+      $('historyRetry').hidden=true;
+      $('historyList').replaceChildren();
+      $('historySummary').replaceChildren();
+      if(!currentAccount){
+        setText('historyStatus','登入後可保存並查看對局紀錄。');
+        return;
+      }
+      try{
+        const data=await accountApi('/api/history');
+        if(request!==historyRequest)return;
+        const {played,wins,losses,draws}=data.totals;
+        setText('historySummary',`${played} 場　勝 ${wins}　敗 ${losses}　平手 ${draws}`);
+        const dateFormat=new Intl.DateTimeFormat('zh-TW',{dateStyle:'short',timeStyle:'short'});
+        const labels={win:'勝利',loss:'戰敗',draw:'平手'};
+        for(const match of data.matches){
+          const li=document.createElement('li');
+          li.className='history-row';
+          const result=document.createElement('strong');
+          result.className=`history-${match.result}`;
+          result.textContent=labels[match.result];
+          const opponent=document.createElement('div');
+          opponent.className='history-opponent';
+          opponent.textContent=`對手　${match.opponent}`;
+          const mode=document.createElement('small');
+          mode.textContent=match.mode==='ai'?'AI 練習':'1 對 1 對戰';
+          opponent.appendChild(mode);
+          const time=document.createElement('small');
+          time.textContent=`${dateFormat.format(new Date(match.finishedAt))} · ${formatTime(match.duration)}`;
+          li.append(result,opponent,time);
+          $('historyList').appendChild(li);
+        }
+        setText('historyStatus',data.matches.length?'顯示最近 50 場已結束的對局。':'還沒有已結束的對局，完成第一場對戰後就會出現在這裡。');
+      }catch(error){
+        if(request!==historyRequest)return;
+        setText('historyStatus',error.name==='TimeoutError'?'戰績讀取逾時，請重試。':error.message);
+        $('historyRetry').hidden=false;
+      }
+    }
+    function showHistory(){
+      if(!currentAccount){showAccount();return;}
+      historyReturnFocus=document.activeElement;
+      gameMenu.open=false;
+      $('historyModal').classList.remove('hidden');
+      lockForAccountModal();
+      $('closeHistory').focus();
+      loadHistory();
+    }
+    function closeHistory(){
+      historyRequest++;
+      $('historyModal').classList.add('hidden');
+      lockForAccountModal();
+      if(historyReturnFocus?.isConnected)historyReturnFocus.focus();
+    }
+    $('showHistory').onclick=showHistory;
+    $('showHistoryGame').onclick=showHistory;
+    $('resultHistory').onclick=showHistory;
+    $('closeHistory').onclick=closeHistory;
+    $('historyRetry').onclick=loadHistory;
+    for(const [id,close] of [['accountModal',closeAccount],['historyModal',closeHistory]]){
+      $(id).addEventListener('click',event=>{if(event.target===$(id))close();});
+    }
+    document.addEventListener('keydown',event=>{
+      const modal=!$('accountModal').classList.contains('hidden')?$('accountModal'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
+      if(!modal)return;
+      if(event.key==='Escape'){
+        event.preventDefault();event.stopImmediatePropagation();
+        if(modal.id==='accountModal')closeAccount();else closeHistory();
+      }
+      if(event.key==='Tab'){
+        const focusable=[...modal.querySelectorAll('button,input')].filter(node=>!node.disabled&&node.getClientRects().length);
+        const first=focusable[0],last=focusable.at(-1);
+        if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
+        else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
+      }
+    },true);
+    for(let i=0;i<16;i++){
+      const spark=document.createElement('i');
+      spark.style.setProperty('--x',`${(i*37)%100}%`);
+      spark.style.setProperty('--delay',`${i*.07}s`);
+      $('resultSparks').appendChild(spark);
+    }
+    async function bootAccount(){
+      try{
+        const data=await accountApi('/api/account');
+        currentAccount=data.user;
+        if(currentAccount){
+          setText('accountButton',currentAccount.name);
+          $('logoutButton').hidden=false;
+          $('nameInput').value=currentAccount.name;
+          $('nameInput').readOnly=true;
+        }else if(!sessionStorage.getItem('windwardVisited')){
+          showAccount();
+          if(!data.available)setText('accountStatus','帳號資料庫正在準備，可先以訪客遊玩。');
+        }
+      }catch{showToast('帳號服務暫時無法連線，可先以訪客遊玩。');}
+      connect();
+    }
+    setupBuildActions();resize();bootAccount();requestAnimationFrame(loop);
   })();
   </script>
 </body>
