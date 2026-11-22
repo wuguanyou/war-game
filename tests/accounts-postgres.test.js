@@ -68,6 +68,26 @@ test('PostgreSQL account lifecycle, private schema and atomic match history', as
     assert.equal((await api('/api/login', { username: 'player_one', password })).status, 200);
     assert.equal((await api('/api/account', undefined, cookie)).body.user.name, "島嶼 O'Reilly");
     assert.equal((await api('/api/history', undefined, cookie)).body.totals.played, 0);
+    const profile={name:'海風領航員',bio:'守護群島',avatar:'anchor:blue',settings:{reduceMotion:true,showIncome:false,cameraSpeed:1.4,startZoom:1.25}};
+    assert.equal((await api('/api/profile',profile)).status,401);
+    assert.equal((await api('/api/profile',{...profile,avatar:'javascript:alert(1)'},cookie)).status,400);
+    assert.equal((await api('/api/profile',{...profile,name:'<script>'},cookie)).status,400);
+    assert.equal((await api('/api/profile',{...profile,settings:{...profile.settings,cameraSpeed:999}},cookie)).status,400);
+    const saved=await api('/api/profile',profile,cookie);assert.equal(saved.status,200);
+    const persisted=(await api('/api/account',undefined,cookie)).body.user;
+    assert.equal(persisted.name,profile.name);assert.equal(persisted.avatar,profile.avatar);assert.equal(persisted.bio,profile.bio);
+    assert.deepEqual(persisted.settings,profile.settings);assert.equal(persisted.username,'player_one');assert.ok(persisted.createdAt);
+    const second=await api('/api/register',{username:'player_two',password,name:'另一位指揮官'});
+    assert.equal(second.status,200);
+    const secondCookie=second.headers['Set-Cookie'].split(';')[0];
+    assert.equal((await api('/api/account',undefined,secondCookie)).body.user.avatar,'compass:mint');
+    assert.equal((await engine.query("SELECT to_regclass('public.game_profiles') AS name")).rows[0].name,null);
+    assert.equal((await api('/api/profile',{...profile,name:'另一名領航員',id:user.id},secondCookie)).status,200);
+    assert.equal((await api('/api/account',undefined,cookie)).body.user.name,profile.name);
+    const avatar='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1cAAAAASUVORK5CYII=';
+    assert.equal((await api('/api/profile',{...profile,avatar},cookie)).status,200);
+    assert.equal((await api('/api/account',undefined,cookie)).body.user.avatar,avatar);
+    assert.equal((await api('/api/profile',{...profile,avatar:'x'.repeat(71000)},cookie)).status,413);
     for (const winner of [0, 1, -1]) {
       const match = { id: crypto.randomUUID(), mode: 'ai', winner, duration: 125.9, finishedAt: Date.now(), players: [{ id: user.id, name: user.name }, { id: null, name: '對手' }] };
       await accounts.recordMatch(match);

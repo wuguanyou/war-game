@@ -597,6 +597,12 @@ function disconnect(ws){if(ws._appClosed)return;ws._appClosed=true;sockets.delet
 const server=http.createServer(async(req,res)=>{
   let pathname='/';try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{}
   if(pathname.startsWith('/api/')){
+    if(pathname==='/api/profile'&&req.method==='POST'&&accounts.sameOrigin(req)){
+      res.on('finish',async()=>{
+        if(res.statusCode!==200)return;
+        try{const user=await accounts.identify(req);if(user)for(const socket of sockets)if(socket.account?.id===user.id)socket.account=user;}catch{}
+      });
+    }
     if(pathname==='/api/logout'&&req.method==='POST'&&accounts.sameOrigin(req)){
       try{
         const user=await accounts.identify(req);

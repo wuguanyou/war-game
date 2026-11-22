@@ -20,6 +20,12 @@ async function migrate() {
     return;
   }
   const definitions = [
+    `CREATE TABLE IF NOT EXISTS game_profiles (
+      account_id CHAR(36) PRIMARY KEY,
+      avatar TEXT NOT NULL,
+      bio VARCHAR(120) NOT NULL,
+      settings TEXT NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS game_accounts (
       id CHAR(36) PRIMARY KEY,
       username VARCHAR(24) NOT NULL UNIQUE,
@@ -53,7 +59,8 @@ async function migrate() {
   for (const sql of definitions) await pool.query(sql);
 }
 function publicUser(row) {
-  return { id: row.id, username: row.username, name: row.display_name };
+  let settings={};try{settings=JSON.parse(row.settings||'{}');}catch{}
+  return { id: row.id, username: row.username, name: row.display_name,avatar:row.avatar||'compass:mint',bio:row.bio||'',createdAt:row.created_at,settings };
 }
 function tokenHash(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -66,7 +73,7 @@ async function identify(req) {
   if (!token || !/^[a-f0-9]{64}$/.test(token) || !pool) return null;
   await initialize();
   const [rows] = await pool.execute(
-    'SELECT a.id, a.username, a.display_name FROM game_sessions s JOIN game_accounts a ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?',
+    'SELECT a.id, a.username, a.display_name, a.created_at, p.avatar, p.bio, p.settings FROM game_sessions s JOIN game_accounts a ON a.id=s.account_id LEFT JOIN game_profiles p ON p.account_id=a.id WHERE s.token_hash=? AND s.expires_at>?',
     [tokenHash(token), Date.now()]
   );
   return rows[0] ? publicUser(rows[0]) : null;
@@ -103,12 +110,12 @@ function sendJson(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(body));
 }
-async function readJson(req) {
+async function readJson(req,limit=4096) {
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > 4096) throw Object.assign(new Error('資料過長。'), { status: 413 });
+    if (size > limit) throw Object.assign(new Error('資料過長。'), { status: 413 });
     chunks.push(chunk);
   }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); }
@@ -169,6 +176,32 @@ async function handle(req, res, pathname) {
       return true;
     }
     if (req.method !== 'POST') { sendJson(res, 404, { error: '找不到這個功能。' }); return true; }
+    if (pathname === '/api/profile') {
+      const user=await identify(req);
+      if(!user){sendJson(res,401,{error:'請先登入再儲存個人資訊。'});return true;}
+      checkRate(req);
+      const input=await readJson(req,70000);
+      const name=typeof input?.name==='string'?input.name.trim():'';
+      const bio=typeof input?.bio==='string'?input.bio.trim():'';
+      const avatar=input?.avatar;
+      const preset=typeof avatar==='string'&&/^(compass|sword|shield|crown|leaf|anchor):(mint|blue|rose|gold|violet)$/.test(avatar);
+      const uploaded=typeof avatar==='string'&&avatar.length<=60000&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(avatar);
+      const settings=input?.settings;
+      if(!name||name.length>16||/[<>\x00-\x1f]/.test(name)||bio.length>120||/[<>\x00-\x08\x0b\x0c\x0e-\x1f]/.test(bio)||(!preset&&!uploaded)||!settings||
+        typeof settings.reduceMotion!=='boolean'||typeof settings.showIncome!=='boolean'||![.7,1,1.4].includes(settings.cameraSpeed)||![.75,1,1.25].includes(settings.startZoom)){
+        sendJson(res,400,{error:'請確認名稱、頭像及設定格式；名稱最多16字，自介最多120字。'});return true;
+      }
+      const normalized={reduceMotion:settings.reduceMotion,showIncome:settings.showIncome,cameraSpeed:settings.cameraSpeed,startZoom:settings.startZoom};
+      const conn=await pool.getConnection();
+      try{
+        await conn.beginTransaction();
+        await conn.execute('UPDATE game_accounts SET display_name=? WHERE id=?',[name,user.id]);
+        const sql=postgres?'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON CONFLICT (account_id) DO UPDATE SET avatar=EXCLUDED.avatar,bio=EXCLUDED.bio,settings=EXCLUDED.settings':'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE avatar=VALUES(avatar),bio=VALUES(bio),settings=VALUES(settings)';
+        await conn.execute(sql,[user.id,avatar,bio,JSON.stringify(normalized)]);
+        await conn.commit();
+      }catch(error){await conn.rollback();throw error;}finally{conn.release();}
+      sendJson(res,200,{user:{...user,name,bio,avatar,settings:normalized}});return true;
+    }
     if (pathname === '/api/logout') {
       const token = sessionToken(req);
       if (token && pool) {
@@ -210,7 +243,7 @@ async function handle(req, res, pathname) {
       }
       user = { id, username, name: name || username };
     } else {
-      const [rows] = await pool.execute('SELECT * FROM game_accounts WHERE username=?', [username]);
+      const [rows] = await pool.execute('SELECT a.*, p.avatar, p.bio, p.settings FROM game_accounts a LEFT JOIN game_profiles p ON p.account_id=a.id WHERE a.username=?', [username]);
       const valid = await verifyPassword(password, rows[0]?.password_hash);
       if (!rows[0] || !valid) { sendJson(res, 401, { error: '帳號或密碼錯誤。' }); return true; }
       user = publicUser(rows[0]);

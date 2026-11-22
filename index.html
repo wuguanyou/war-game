@@ -244,6 +244,15 @@
     .account-footer{display:flex;justify-content:space-between;gap:8px;margin-top:14px;align-items:center}
     .account-status{min-height:20px;margin:10px 0 0;font-size:13px;color:#8b4427}
     #accountModal,#historyModal{z-index:30}
+    .profile-modal{z-index:40;background:#071b2be8;backdrop-filter:blur(12px);padding:22px}
+    .profile-sheet{width:min(900px,100%);max-height:94dvh;overflow:auto;background:radial-gradient(ellipse at top left,#295362,#102b3e 65%);border:1px solid #b7a5798c;color:#e7e9df;box-shadow:0 25px 100px #0008;border-radius:28px 5px 28px 5px;padding:28px 32px}
+    .profile-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #cbb47e40;padding-bottom:18px}.profile-head small,.profile-eyebrow{color:#b5c6c3;font:10px Georgia,serif;letter-spacing:.23em}.profile-head h2{font-family:"PMingLiU",serif;color:#f1d9a2;margin:7px 0 0}.profile-head button{font-size:30px;background:none;border:0;color:#e4cc91}
+    .profile-layout{display:grid;grid-template-columns:185px minmax(0,1fr);gap:36px;padding:28px 0}.profile-nav{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}.profile-nav>strong{font-size:18px;color:#f0d9a7}.profile-nav>small{color:#98b8bf;word-break:break-all}.profile-nav [role=tablist]{width:100%;margin-top:15px;display:grid;gap:8px}.profile-nav [role=tab]{border:0;border-left:2px solid transparent;background:none;color:#adc6ca;padding:12px}.profile-nav [aria-selected=true]{border-color:#e5c581;background:linear-gradient(90deg,#dbc08024,transparent);color:#ffe1a4}
+    .commander-avatar{width:108px;height:108px;display:grid;place-items:center;border-radius:50%;border:2px solid #d6bf85;background:#204d5a;overflow:hidden;flex:none;font:52px Georgia,serif;color:#fff1c9;box-shadow:0 0 0 5px #d6bf8512}.commander-avatar img{width:100%;height:100%;object-fit:cover}.commander-avatar.compact{width:43px;height:43px;font-size:25px;box-shadow:none}
+    .profile-content{min-width:0}.profile-content h3{font-family:"PMingLiU",serif;font-size:23px;color:#f1dfb8;margin:10px 0 24px}.profile-content label{display:block;font-size:12px;color:#c8d2c7;margin:15px 0 8px}.profile-content input:not([type=checkbox]):not([type=range]):not([type=file]),.profile-content textarea,.profile-content select{width:100%;padding:10px 12px;border:1px solid #67878b;background:#0a2337a6;color:#eef0df;border-radius:6px}.profile-content textarea{resize:vertical}.profile-facts{display:flex;flex-wrap:wrap;gap:25px;margin:22px 0;font-size:11px;color:#a6bfc4}.profile-facts strong{display:block;margin-top:7px;color:#e7d6ae;font-size:13px}.profile-foot{border-top:1px solid #cbb47e40;padding-top:18px;display:flex;align-items:center;gap:20px;justify-content:space-between}.profile-foot p{font-size:12px;color:#cfcca9;max-width:70%;line-height:1.6}.profile-foot button{flex:none}
+    .avatar-choices{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.avatar-choices button{font-size:28px;color:#f1d599;border:1px solid #72888a;background:#183c4c;border-radius:50%;aspect-ratio:1;padding:0}.avatar-choices [aria-pressed=true],.avatar-colors [aria-pressed=true]{outline:2px solid #edca85;outline-offset:3px}.avatar-colors{display:flex;gap:16px;padding:7px 3px}.avatar-colors button{width:26px;height:26px;border:1px solid #c8d2bc;border-radius:50%;padding:0}.avatar-upload{margin-top:25px;border-top:1px solid #81958b3d}.avatar-upload input[type=file]{font-size:12px;max-width:100%}.avatar-upload input[type=range]{width:100%}.setting-switch{display:flex!important;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid #71908d3b;padding:10px 0 17px}.setting-switch small{display:block;font-size:11px;color:#97b5bc;margin-top:6px}.setting-switch input{width:19px;height:19px;accent-color:#ddc485}
+    html.reduce-motion *,html.reduce-motion *::before,html.reduce-motion *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+    @media(max-width:620px){.profile-modal{padding:8px}.profile-sheet{padding:20px 16px;max-height:97dvh}.profile-layout{grid-template-columns:1fr;gap:20px;padding:20px 0}.profile-nav{display:grid;grid-template-columns:65px 1fr;text-align:left;column-gap:17px}.profile-nav .commander-avatar{width:63px;height:63px;font-size:32px;grid-row:1/3}.profile-nav>strong{align-self:end}.profile-nav>small{align-self:start}.profile-nav [role=tablist]{grid-column:1/-1;display:flex;margin-top:8px;gap:0}.profile-nav [role=tab]{flex:1;padding:10px 6px;border-left:0;border-bottom:2px solid transparent;font-size:12px}.profile-nav [aria-selected=true]{border-color:#e5c581}.profile-content h3{font-size:20px;margin-bottom:18px}.profile-foot{gap:8px}.profile-foot p{max-width:60%;font-size:11px}.profile-foot .fantasy-button{padding:10px 13px;font-size:12px}.avatar-choices{gap:10px;grid-template-columns:repeat(3,1fr)}.avatar-choices button{font-size:28px;width:58px;justify-self:center}}
     .history-card{width:min(100%,680px);max-height:85dvh;overflow:auto}
     .history-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .history-summary{display:flex;gap:15px;flex-wrap:wrap;padding-block:14px;color:#31584a;border-bottom:1px solid #d6d6ba}
@@ -387,6 +396,7 @@
           <div class="menu-content">
             <p>房間 <b id="roomCodeTop">—</b></p>
             <button class="control" id="showGuide">操作指南</button>
+            <button class="control" id="profileInGame" type="button">個人資訊／設定</button>
             <button class="control" id="showHistoryGame">歷史戰績</button>
             <button class="control" id="copyRoom">分享房間</button>
             <button class="control" id="leaveRoom">返回大廳</button>
@@ -459,11 +469,12 @@
     <img class="lobby-scene" src="assets/lobby-windward.jpg" alt="" fetchpriority="high">
     <div class="lobby-shell">
       <header class="lobby-top">
-        <div class="brand"><span class="brand-icon" aria-hidden="true"></span><div><strong id="lobbyCommander">群島指揮官</strong><small>WINDWARD COMMANDER</small></div></div>
+        <div class="brand"><button class="commander-avatar compact" id="lobbyAvatar" aria-label="編輯個人頭像" type="button"></button><div><strong id="lobbyCommander">群島指揮官</strong><small>WINDWARD COMMANDER</small></div></div>
         <div class="lobby-top-tools">
           <span class="connection-chip"><i class="connection" id="lobbyConnectionDot" aria-hidden="true"></i><span id="lobbyConnectionText">未連線</span></span>
           <button class="control" id="lobbyGuide" type="button">操作指南</button>
           <button class="control" id="showHistory" type="button">歷史戰績</button>
+          <button class="control" id="openProfile" type="button">個人資訊／設定</button>
           <button class="control" id="accountButton" type="button">登入／註冊</button>
           <button class="control" id="logoutButton" type="button" hidden>登出</button>
         </div>
@@ -524,7 +535,7 @@
       <p class="drawer-kicker">COMMANDER'S GATE</p>
       <div class="account-card">
         <h2 id="accountTitle">指揮官登入</h2>
-        <div class="entry-identity" id="entryIdentity" hidden><span class="entry-avatar" aria-hidden="true">⚑</span><div><p id="entryDisplayName"></p><small id="entryUsername"></small><button class="entry-link" id="entryChange" type="button">切換登入帳號</button></div></div>
+        <div class="entry-identity" id="entryIdentity" hidden><button class="commander-avatar" id="accountAvatar" type="button" aria-label="編輯個人頭像"></button><div><p id="entryDisplayName"></p><small id="entryUsername"></small><button class="entry-link" id="entryChange" type="button">切換登入帳號</button></div></div>
         <div id="entryCredentials">
           <div class="account-tabs" role="tablist" aria-label="帳號操作"><button id="loginTab" type="button" role="tab" aria-selected="true">登入</button><button id="registerTab" type="button" role="tab" aria-selected="false">建立帳號</button></div>
           <form id="accountForm">
@@ -550,6 +561,20 @@
       <button id="historyRetry" type="button" hidden>重新載入</button>
     </div>
   </div>
+  <div class="modal profile-modal hidden" id="profileModal" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+    <section class="profile-sheet">
+      <header class="profile-head"><div><small>COMMANDER DOSSIER</small><h2 id="profileTitle">指揮官檔案</h2></div><button id="closeProfile" type="button" aria-label="關閉個人資訊">×</button></header>
+      <div class="profile-layout">
+        <aside class="profile-nav"><div class="commander-avatar" id="profileAvatar"></div><strong id="profileCaption"></strong><small id="profileAccount"></small><div role="tablist" aria-label="檔案分類"><button id="profileInfoTab" role="tab" aria-selected="true" aria-controls="profileInfo">個人資訊</button><button id="profileAvatarTab" role="tab" aria-selected="false" aria-controls="profileAvatarPanel">編輯頭像</button><button id="profileSettingsTab" role="tab" aria-selected="false" aria-controls="profileSettings">遊戲設定</button></div></aside>
+        <div class="profile-content">
+          <section id="profileInfo" role="tabpanel" aria-labelledby="profileInfoTab"><p class="profile-eyebrow">YOUR STORY</p><h3>留下一個讓人記住的名字</h3><label for="profileName">指揮官名稱</label><input id="profileName" maxlength="16" autocomplete="nickname"><label for="profileBio">個人簡介</label><textarea id="profileBio" maxlength="120" rows="3" placeholder="寫下你的戰場宣言…"></textarea><p class="note">名稱最多16字，簡介最多120字。登入帳號名稱維持不變。</p><div class="profile-facts"><span>加入群島<strong id="profileJoined">—</strong></span><span>對戰紀錄<strong id="profileRecord">尚未讀取</strong></span></div><button id="profileHistory" class="entry-link" type="button">查看完整戰績 ›</button></section>
+          <section id="profileAvatarPanel" role="tabpanel" aria-labelledby="profileAvatarTab" hidden><p class="profile-eyebrow">YOUR EMBLEM</p><h3>選擇你的指揮官徽記</h3><div class="avatar-choices" id="avatarChoices" aria-label="選擇頭像徽記"></div><label>徽記色彩</label><div class="avatar-colors" id="avatarColors" aria-label="選擇頭像色彩"></div><div class="avatar-upload"><label for="avatarFile">或上傳自己的圖片</label><input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp"><p class="note">PNG、JPG 或 WebP，最多4MB。以中心裁切為圓形頭像。</p><label for="avatarZoom">圖片縮放</label><input id="avatarZoom" type="range" min="1" max="3" step="0.05" value="1" disabled></div></section>
+          <section id="profileSettings" role="tabpanel" aria-labelledby="profileSettingsTab" hidden><p class="profile-eyebrow">MAKE IT YOURS</p><h3>依照你的節奏指揮</h3><label class="setting-switch"><span>採集收益數字<small>合併附近收益，以淡出小字顯示。</small></span><input id="settingIncome" type="checkbox"></label><label class="setting-switch"><span>減少介面動畫<small>停用封面漂浮、閃爍及介面轉場。</small></span><input id="settingMotion" type="checkbox"></label><label for="settingCamera">鍵盤移動鏡頭速度</label><select id="settingCamera"><option value="0.7">慢速</option><option value="1">標準</option><option value="1.4">快速</option></select><label for="settingZoom">新對局的初始縮放</label><select id="settingZoom"><option value="0.75">較遠 · 查看戰場</option><option value="1">標準</option><option value="1.25">較近 · 查看部隊</option></select><p class="note">鏡頭速度及顯示設定儲存後生效，初始縮放於下一場對局套用。訪客設定只保存在這個瀏覽器。</p><button class="entry-link" id="resetSettings" type="button">恢復預設設定</button></section>
+        </div>
+      </div>
+      <footer class="profile-foot"><p id="profileStatus" role="status"></p><button class="fantasy-button" id="saveProfile" type="button">儲存變更</button></footer>
+    </section>
+  </div>
   <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
     <div class="result-card">
       <div class="result-sparks" id="resultSparks" aria-hidden="true"></div>
@@ -564,6 +589,10 @@
   (()=>{
     'use strict';
     const $=id=>document.getElementById(id),canvas=$('map'),miniCanvas=$('minimap'),miniCtx=miniCanvas.getContext('2d'),TILE=28;
+    const DEFAULT_SETTINGS={reduceMotion:false,showIncome:true,cameraSpeed:1,startZoom:.75};
+    function readLocal(key,fallback){try{return JSON.parse(localStorage.getItem(key))||fallback;}catch{return fallback;}}
+    let preferences={...DEFAULT_SETTINGS,...readLocal('windwardSettings',{})};
+    document.documentElement.classList.toggle('reduce-motion',!!preferences.reduceMotion);
     const mainCtx=canvas.getContext('2d'),terrainCache=document.createElement('canvas'),overviewCache=document.createElement('canvas');
     let ctx=mainCtx,needsDraw=true,mapOverviewDirty=true,orderMarker=null;
     const dirtyTiles=new Set();
@@ -704,7 +733,7 @@
           selected=new Set([...selected].filter(id=>message.units.some(u=>u.id===id&&u.owner===slot)));
           $('lobbyPage').hidden=true;
           $('game').hidden=false;
-          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
+          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden')||!$('profileModal').classList.contains('hidden');
           $('result').classList.toggle('show',!!message.ended);
           if(entering){
             const base=message.buildings.find(b=>b.type==='base');
@@ -712,7 +741,7 @@
             const focus=base||villagers[0];
             camera.x=base?base.x+.5:focus?.x??SIZE/2;camera.y=base?base.y+.5:focus?.y??SIZE/2;
             if(!base)selected=new Set(villagers.map(u=>u.id));
-            camera.ready=true;resize();camera.zoom=Math.max(mapFitZoom(),.75);clampCamera();needsDraw=true;
+            camera.ready=true;resize();camera.zoom=Math.max(mapFitZoom(),preferences.startZoom);clampCamera();needsDraw=true;
             if(!$('game').inert)canvas.focus();
           }
           if(message.ended){
@@ -1100,7 +1129,7 @@
       }
     });
     window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());window.addEventListener('resize',resize);
-    function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;let vx=0,vy=0;if(keys.has('w')||keys.has('arrowup'))vy--;if(keys.has('s')||keys.has('arrowdown'))vy++;if(keys.has('a')||keys.has('arrowleft'))vx--;if(keys.has('d')||keys.has('arrowright'))vx++;if(vx||vy){camera.x+=vx*dt*9/camera.zoom;camera.y+=vy*dt*9/camera.zoom;clampCamera();needsDraw=true}
+    function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;let vx=0,vy=0;if(keys.has('w')||keys.has('arrowup'))vy--;if(keys.has('s')||keys.has('arrowdown'))vy++;if(keys.has('a')||keys.has('arrowleft'))vx--;if(keys.has('d')||keys.has('arrowright'))vx++;if(vx||vy){camera.x+=vx*dt*9*preferences.cameraSpeed/camera.zoom;camera.y+=vy*dt*9*preferences.cameraSpeed/camera.zoom;clampCamera();needsDraw=true}
       const animation=state&&!state.ended&&(state.units.some(u=>u.moving||u.work||now-u.receivedAt<u.duration)||(state.effects??[]).some(e=>state.elapsed+(now-state.receivedAt)/1000-e.at<(e.kind==='income'?1.2:.75)));
       if(state&&(needsDraw||orderMarker||drag?.moved||animation))draw();
       requestAnimationFrame(loop)}
@@ -1560,6 +1589,7 @@
       for(const e of state.effects||[]){
         const age=clock-e.at;
         if(e.kind==='income'){
+          if(!preferences.showIncome)continue;
           if(age<0||age>=1.2)continue;
           ctx.save();ctx.globalAlpha=.68*Math.min(1,(1.2-age)/.4);
           ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillStyle='#e2edc7';
@@ -1648,12 +1678,130 @@
       if(!response.ok)throw new Error(data.error||'服務暫時無法連線。');
       return data;
     }
+    const AVATAR_SIGILS={compass:'✧',sword:'⚔',shield:'⛨',crown:'♛',leaf:'❧',anchor:'⚓'};
+    const AVATAR_LABELS={compass:'星羅盤',sword:'交叉雙劍',shield:'守護盾',crown:'王冠',leaf:'月桂葉',anchor:'船錨'};
+    const AVATAR_COLORS={mint:'#276354',blue:'#285b82',rose:'#864a60',gold:'#8b6c32',violet:'#655181'};
+    let profileDraftAvatar='compass:mint',profileImage=null,profileReturnFocus=null,profileRequest=0,profileBusy=false;
+    function renderAvatar(node,value){
+      node.replaceChildren();node.style.background='';
+      if(typeof value==='string'&&/^data:image\/(png|jpeg|webp);base64,/.test(value)){
+        const img=document.createElement('img');img.src=value;img.alt='自訂指揮官頭像';node.appendChild(img);
+      }else{
+        const [sigil,color]=(value||'compass:mint').split(':');
+        node.textContent=AVATAR_SIGILS[sigil]||AVATAR_SIGILS.compass;node.style.background=AVATAR_COLORS[color]||AVATAR_COLORS.mint;
+      }
+    }
+    function refreshProfileIdentity(){
+      const avatar=currentAccount?.avatar||readLocal('windwardGuestProfile',{}).avatar||'compass:mint';
+      renderAvatar($('lobbyAvatar'),avatar);renderAvatar($('accountAvatar'),avatar);
+    }
+    function applySettings(settings){
+      preferences={...DEFAULT_SETTINGS,...settings};
+      document.documentElement.classList.toggle('reduce-motion',!!preferences.reduceMotion);needsDraw=true;
+    }
+    function setProfileTab(tab){
+      for(const id of ['Info','Avatar','Settings']){
+        $(`profile${id}Tab`).setAttribute('aria-selected',String(id===tab));
+        $(`profile${id}Tab`).tabIndex=id===tab?0:-1;
+        $(id==='Avatar'?'profileAvatarPanel':`profile${id}`).hidden=id!==tab;
+      }
+    }
+    function updateAvatarPreview(){
+      renderAvatar($('profileAvatar'),profileDraftAvatar);
+      const [sigil,color]=profileDraftAvatar.split(':');
+      for(const button of $('avatarChoices').children)button.setAttribute('aria-pressed',String(button.dataset.sigil===sigil));
+      for(const button of $('avatarColors').children)button.setAttribute('aria-pressed',String(button.dataset.color===color));
+    }
+    function fillSettings(values){
+      $('settingIncome').checked=values.showIncome;$('settingMotion').checked=values.reduceMotion;
+      $('settingCamera').value=values.cameraSpeed;$('settingZoom').value=values.startZoom;
+    }
+    async function openProfile(){
+      profileReturnFocus=document.activeElement;gameMenu.open=false;profileImage=null;
+      const guest=readLocal('windwardGuestProfile',{}),user=currentAccount;
+      profileDraftAvatar=user?.avatar||guest.avatar||'compass:mint';
+      $('profileName').value=user?.name||$('nameInput').value||'群島指揮官';
+      $('profileBio').value=user?.bio||guest.bio||'';
+      setText('profileCaption',user?.name||'訪客指揮官');setText('profileAccount',user?'@'+user.username:'僅保存在這個瀏覽器');
+      const date=user?.createdAt?new Date(user.createdAt):null;
+      setText('profileJoined',date&&!isNaN(date)?new Intl.DateTimeFormat('zh-TW',{dateStyle:'medium'}).format(date):user?'指揮官成員':'訪客模式');
+      setText('profileRecord',user?'讀取戰績中…':'登入後保存戰績');
+      $('profileHistory').hidden=!user;
+      $('avatarFile').value='';$('avatarZoom').value=1;$('avatarZoom').disabled=true;
+      fillSettings(preferences);updateAvatarPreview();setProfileTab('Info');
+      setText('profileStatus',user?'修改後按儲存，同步至你的雲端帳號。':'訪客資料與設定只儲存在目前瀏覽器。');
+      $('profileModal').classList.remove('hidden');lockForAccountModal();$('profileInfoTab').focus();
+      const request=++profileRequest;
+      if(user)try{
+        const data=await accountApi('/api/history');if(request!==profileRequest)return;
+        setText('profileRecord',`${data.totals.played}場 · ${data.totals.wins}勝 ${data.totals.losses}敗 ${data.totals.draws}和`);
+      }catch{if(request===profileRequest)setText('profileRecord','暫時無法讀取');}
+    }
+    function closeProfile(){
+      if(profileBusy)return;
+      profileRequest++;$('profileModal').classList.add('hidden');profileImage=null;lockForAccountModal();profileReturnFocus?.focus();
+    }
+    for(const id of ['openProfile','lobbyAvatar','accountAvatar','profileInGame'])$(id).onclick=openProfile;
+    $('closeProfile').onclick=closeProfile;
+    $('profileModal').onclick=event=>{if(event.target===$('profileModal'))closeProfile();};
+    for(const [i,tab] of ['Info','Avatar','Settings'].entries()){
+      const button=$(`profile${tab}Tab`);button.onclick=()=>setProfileTab(tab);
+      button.onkeydown=event=>{
+        if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+        event.preventDefault();const tabs=['Info','Avatar','Settings'];
+        const next=event.key==='Home'?0:event.key==='End'?2:(i+(event.key==='ArrowRight'?1:2))%3;
+        setProfileTab(tabs[next]);$(`profile${tabs[next]}Tab`).focus();
+      };
+    }
+    $('profileHistory').onclick=()=>{closeProfile();showHistory();};
+    $('resetSettings').onclick=()=>{fillSettings(DEFAULT_SETTINGS);setText('profileStatus','已恢復預設值，按儲存後生效。');};
+    for(const [sigil,label] of Object.entries(AVATAR_LABELS)){
+      const button=document.createElement('button');button.type='button';button.dataset.sigil=sigil;button.textContent=AVATAR_SIGILS[sigil];button.setAttribute('aria-label',label);
+      button.onclick=()=>{profileImage=null;$('avatarZoom').disabled=true;const color=profileDraftAvatar.split(':')[1];profileDraftAvatar=sigil+':'+(AVATAR_COLORS[color]?color:'mint');updateAvatarPreview();};$('avatarChoices').appendChild(button);
+    }
+    for(const [color,background] of Object.entries(AVATAR_COLORS)){
+      const button=document.createElement('button');button.type='button';button.dataset.color=color;button.style.background=background;button.setAttribute('aria-label',({mint:'翡翠綠',blue:'海洋藍',rose:'玫瑰紅',gold:'暖金',violet:'星紫'})[color]);
+      button.onclick=()=>{profileImage=null;$('avatarZoom').disabled=true;const sigil=profileDraftAvatar.split(':')[0];profileDraftAvatar=(AVATAR_SIGILS[sigil]?sigil:'compass')+':'+color;updateAvatarPreview();};$('avatarColors').appendChild(button);
+    }
+    function cropAvatar(){
+      if(!profileImage)return;
+      const c=document.createElement('canvas');c.width=c.height=160;const size=Math.min(profileImage.width,profileImage.height)/Number($('avatarZoom').value);
+      c.getContext('2d').drawImage(profileImage,(profileImage.width-size)/2,(profileImage.height-size)/2,size,size,0,0,160,160);
+      profileDraftAvatar=c.toDataURL('image/webp',.8);updateAvatarPreview();
+    }
+    $('avatarZoom').oninput=cropAvatar;
+    $('avatarFile').onchange=async()=>{
+      const file=$('avatarFile').files[0];if(!file)return;
+      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>4*1024*1024){setText('profileStatus','請選擇4MB以內的 PNG、JPG 或 WebP 圖片。');return;}
+      const request=profileRequest,url=URL.createObjectURL(file),img=new Image();
+      try{
+        await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url;});
+        if(request!==profileRequest)return;
+        profileImage=img;$('avatarZoom').disabled=false;$('avatarZoom').value=1;cropAvatar();setText('profileStatus','圖片已載入，可調整縮放；按儲存後套用。');
+      }catch{setText('profileStatus','圖片無法讀取，請換一張再試。');}finally{URL.revokeObjectURL(url);}
+    };
+    $('saveProfile').onclick=async()=>{
+      if(profileBusy)return;
+      const name=$('profileName').value.trim(),bio=$('profileBio').value.trim();
+      if(!name||name.length>16||bio.length>120){setText('profileStatus','請填寫1–16字名稱，簡介最多120字。');setProfileTab('Info');return;}
+      const settings={showIncome:$('settingIncome').checked,reduceMotion:$('settingMotion').checked,cameraSpeed:Number($('settingCamera').value),startZoom:Number($('settingZoom').value)};
+      profileBusy=true;$('saveProfile').disabled=true;$('closeProfile').disabled=true;setText('profileStatus','正在儲存…');
+      try{
+        if(currentAccount){const data=await accountApi('/api/profile',{name,bio,avatar:profileDraftAvatar,settings});currentAccount=data.user;}
+        else{localStorage.setItem('windwardGuestProfile',JSON.stringify({name,avatar:profileDraftAvatar,bio}));localStorage.setItem('windwardSettings',JSON.stringify(settings));$('nameInput').value=name;}
+        applySettings(settings);refreshAccountEntry();refreshProfileIdentity();
+        setText('profileCaption',name);setText('profileStatus',currentAccount?'已儲存至雲端；頭像與設定已套用。':'已儲存於這個瀏覽器。');
+      }catch(error){setText('profileStatus',error.message||'無法儲存，請重試。');}
+      finally{profileBusy=false;$('saveProfile').disabled=false;$('closeProfile').disabled=false;}
+    };
     function lockForAccountModal(){
-      const modalOpen=!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
+      const profileOpen=!$('profileModal').classList.contains('hidden');
+      const modalOpen=profileOpen||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
       $('lobbyPage').inert=modalOpen||!guide.classList.contains('hidden');
       $('game').inert=modalOpen||!state||!!state.ended||!guide.classList.contains('hidden');
       $('result').inert=modalOpen;
-      $('accountModal').inert=!$('historyModal').classList.contains('hidden')||!guide.classList.contains('hidden');
+      $('accountModal').inert=profileOpen||!$('historyModal').classList.contains('hidden')||!guide.classList.contains('hidden');
+      $('historyModal').inert=profileOpen;
       const drawerOpen=!$('entryDrawer').hidden;
       for(const selector of ['.entry-header','.entry-layout','.entry-footer'])document.querySelector(selector).inert=drawerOpen;
       keys.clear();
@@ -1688,6 +1836,7 @@
       else $('lobbyTitle').focus();
     }
     function refreshAccountEntry(){
+      refreshProfileIdentity();
       const member=!!currentAccount&&!editingAccount;
       $('accountModal').dataset.account=member?'member':'guest';
       $('entryCredentials').hidden=member;
@@ -1701,7 +1850,7 @@
       $('accountSubmit').disabled=!accountReady||authBusy;
       $('titleStart').disabled=!accountReady;
       setText('entryHeaderAccount',currentAccount?currentAccount.name+' · 已登入':'尚未登入');
-      setText('lobbyCommander',currentAccount?currentAccount.name:'群島指揮官');
+      setText('lobbyCommander',currentAccount?currentAccount.name:readLocal('windwardGuestProfile',{}).name||'群島指揮官');
       setText('accountTitle',member?'歡迎回到群島':registerMode?'建立指揮官帳號':'指揮官登入');
       setText('entryButtonText',member?'進入遊戲':registerMode?'建立並啟航':'登入遊戲');
       setText('accountButton',currentAccount?currentAccount.name:'登入／註冊');
@@ -1836,14 +1985,14 @@
     }
     document.addEventListener('keydown',event=>{
       if(!guide.classList.contains('hidden'))return;
-      const modal=!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
+      const modal=!$('profileModal').classList.contains('hidden')?$('profileModal'):!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
       if(!modal)return;
       if(event.key==='Escape'){
         event.preventDefault();event.stopImmediatePropagation();
-        if(modal.id==='entryDrawer')closeAccount();else closeHistory();
+        if(modal.id==='profileModal')closeProfile();else if(modal.id==='entryDrawer')closeAccount();else closeHistory();
       }
       if(event.key==='Tab'){
-        const focusable=[...modal.querySelectorAll('button,input')].filter(node=>!node.disabled&&node.getClientRects().length);
+        const focusable=[...modal.querySelectorAll('button,input,textarea,select')].filter(node=>!node.disabled&&node.getClientRects().length);
         const first=focusable[0],last=focusable.at(-1);
         if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}
         else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}
@@ -1874,6 +2023,8 @@
       try{
         const data=await accountApi('/api/account');
         currentAccount=data.user;
+        applySettings(currentAccount?(currentAccount.settings||{}):readLocal('windwardSettings',{}));
+        if(!currentAccount&&readLocal('windwardGuestProfile',{}).name)$('nameInput').value=readLocal('windwardGuestProfile',{}).name;
         setText('accountStatus',data.available?'': '帳號服務正在準備，可先以訪客進入。');
         setText('entryConnection',data.available?'雲端連線已就緒':'可使用訪客模式');
       }catch{setText('accountStatus','帳號服務暫時無法連線，可先以訪客進入。');setText('entryConnection','可使用訪客模式');}

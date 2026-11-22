@@ -23,7 +23,7 @@ if (postgres) {
   // All callers use fixed internal SQL. User values are passed separately as parameters.
   function postgresSql(sql) {
     let parameter = 0;
-    return sql.replace(/(?<![\w.])game_(accounts|sessions|matches|match_players)\b/g, 'windward.$&')
+    return sql.replace(/(?<![\w.])game_(accounts|sessions|matches|match_players|profiles)\b/g, 'windward.$&')
       .replace(/\?/g, () => '$' + (++parameter));
   }
   function wrap(client, release) {

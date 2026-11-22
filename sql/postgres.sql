@@ -1,6 +1,13 @@
 CREATE SCHEMA IF NOT EXISTS windward;
 REVOKE ALL ON SCHEMA windward FROM PUBLIC;
 
+CREATE TABLE IF NOT EXISTS windward.game_profiles (
+  account_id VARCHAR(36) PRIMARY KEY,
+  avatar TEXT NOT NULL,
+  bio VARCHAR(120) NOT NULL,
+  settings TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS windward.game_accounts (
   id VARCHAR(36) PRIMARY KEY,
   username VARCHAR(24) NOT NULL UNIQUE,
