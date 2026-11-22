@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../server'),'utf8').split('const server=http.createServer')[0];
 const accountStub={areFriends:async()=>false};
 const context=vm.createContext({require:name=>name==='./accounts'?accountStub:require(name),process,console,Buffer,setTimeout,clearTimeout});
-vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding,makeUnit,lineOfSight,recordIncome,flushIncome,serialize,joinRoom,roomMembers,handleMessage,sockets};',context);
+vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding,makeUnit,lineOfSight,recordIncome,flushIncome,serialize,joinRoom,roomMembers,handleMessage,sockets,queueResult};',context);
 const R=context.gameRules;
 function fresh(seed=1){const g=R.startGame(seed);R.updateVision(g);return g;}
 function step(g,seconds){for(let t=0;t<seconds;t+=.1){g.elapsed+=.1;R.moveUnits(g,.1);R.updateVision(g);R.attackAndGather(g,.1);R.tickBuildings(g,.1);R.cleanupAndVictory(g);}}
@@ -138,4 +138,13 @@ test('battle invitations only reach accepted friends outside rooms',async()=>{
     await R.handleMessage(a,invite);assert.equal(b.messages[0].type,'friendInvite');assert.equal(b.messages[0].from.name,'邀請者');assert.equal(b.messages[0].room,a.room.id);
     b.room={};b.messages=[];a.lastFriendInvite=0;await R.handleMessage(a,invite);assert.equal(b.messages.length,0);
   }finally{accountStub.areFriends=async()=>false;R.sockets.delete(a);R.sockets.delete(b);}
+});
+
+test('tutorial practice delays attacks and never saves a match result',()=>{
+ for(const tutorial of [false,true]){
+ const g=fresh();g.tutorial=tutorial;g.elapsed=100;const t=g.tiles[R.idx(33,33)];t.building=R.makeBuilding(1,'base',33,33);g.players[1].base={x:33,y:33};g.players[1].hasPlacedBase=true;
+ g.units.push(...[[30,31],[31,31],[30,32],[31,32]].map(([x,y])=>R.makeUnit(g,1,'sword',x,y)));R.updateVision(g);R.aiPlay({game:g,ai:true});
+ assert.equal(g.units.filter(u=>u.owner===1&&u.type==='sword').some(u=>u.order!==null),!tutorial);
+ }
+ const game={ended:true};R.queueResult({tutorial:true,game});assert.equal(game.resultQueued,undefined);
 });

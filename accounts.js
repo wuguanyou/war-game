@@ -248,6 +248,23 @@ async function handle(req, res, pathname,context={}) {
       return true;
     }
     if (req.method !== 'POST') { sendJson(res, 404, { error: '找不到這個功能。' }); return true; }
+    if(pathname==='/api/tutorial'){
+      const user=await identify(req);
+      if(!user){sendJson(res,401,{error:'請先登入儲存教學進度。'});return true;}
+      checkRate(req);await readJson(req);
+      const conn=await pool.getConnection();let settings;
+      try{
+        await conn.beginTransaction();
+        await conn.execute('SELECT id FROM game_accounts WHERE id=? FOR UPDATE',[user.id]);
+        const [rows]=await conn.execute('SELECT avatar,bio,settings FROM game_profiles WHERE account_id=?',[user.id]);
+        settings={};try{settings=JSON.parse(rows[0]?.settings||'{}');}catch{}
+        settings={...settings,tutorialCompleted:true};
+        const sql=postgres?'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON CONFLICT (account_id) DO UPDATE SET settings=EXCLUDED.settings':'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE settings=VALUES(settings)';
+        await conn.execute(sql,[user.id,rows[0]?.avatar||user.avatar,rows[0]?.bio||user.bio||'',JSON.stringify(settings)]);
+        await conn.commit();
+      }catch(error){await conn.rollback();throw error;}finally{conn.release();}
+      sendJson(res,200,{settings});return true;
+    }
     if (pathname === '/api/profile') {
       const user=await identify(req);
       if(!user){sendJson(res,401,{error:'請先登入再儲存個人資訊。'});return true;}
@@ -268,6 +285,9 @@ async function handle(req, res, pathname,context={}) {
       try{
         await conn.beginTransaction();
         await conn.execute('UPDATE game_accounts SET display_name=? WHERE id=?',[name,user.id]);
+        const [profiles]=await conn.execute('SELECT settings FROM game_profiles WHERE account_id=?',[user.id]);
+        let storedSettings={};try{storedSettings=JSON.parse(profiles[0]?.settings||'{}');}catch{}
+        if(storedSettings.tutorialCompleted)normalized.tutorialCompleted=true;
         const sql=postgres?'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON CONFLICT (account_id) DO UPDATE SET avatar=EXCLUDED.avatar,bio=EXCLUDED.bio,settings=EXCLUDED.settings':'INSERT INTO game_profiles (account_id,avatar,bio,settings) VALUES (?,?,?,?) ON DUPLICATE KEY UPDATE avatar=VALUES(avatar),bio=VALUES(bio),settings=VALUES(settings)';
         await conn.execute(sql,[user.id,avatar,bio,JSON.stringify(normalized)]);
         await conn.commit();

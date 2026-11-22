@@ -43,6 +43,7 @@ const rooms = new Map();
 const sockets = new Set();
 const pendingResults = new Map();
 function queueResult(room) {
+  if(room.tutorial)return;
   const g=room.game;
   if(!g?.ended||g.resultQueued)return;
   g.resultQueued=true;
@@ -199,7 +200,7 @@ function serialize(g,p,previousTiles){
   const enemyBaseIndex=enemyPosition?idx(enemyPosition.x,enemyPosition.y):-1,enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
   const mapUpdate=previousTiles?{tileChanges:tiles}:{tiles};
-  return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,historySaved:!!g.historySaved,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
+  return{type:'state',size:SIZE,room:g.roomId,tutorial:!!g.tutorial,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,historySaved:!!g.historySaved,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
 }
 function validOwnedUnits(g,p,ids,types=null){return g.units.filter(u=>u.owner===p&&ids.includes(u.id)&&(!types||types.includes(u.type)));}
 function pay(player,cost){if(!cost)return true;for(const [r,n] of Object.entries(cost))if((player.resources[r]||0)<n)return false;for(const [r,n] of Object.entries(cost))player.resources[r]-=n;return true;}
@@ -499,7 +500,7 @@ function aiPlay(room){
     &&soldiers.length+(barracks?.building.queue.length??0)>=4){
     applyCommand(g,p,{action:'train',unit:'villager',x:base.x,y:base.y});
   }
-  if(g.elapsed<AI_PREPARATION_SECONDS)return;
+  if(g.elapsed<(g.tutorial?300:AI_PREPARATION_SECONDS))return;
   const idle=soldiers.filter(u=>!u.order);
   if(!idle.length)return;
   const enemyBuilding=g.tiles.find(t=>t.building?.owner===0&&g.visible[p].has(idx(t.x,t.y)));
@@ -548,7 +549,7 @@ function joinRoom(ws,msg){
   if(ws.account)msg.name=ws.account.name;
   let room,slot=-1;
   if(msg.type==='practice'){
-    const id=randCode();room={id,players:[ws,null],tokens:[crypto.randomBytes(12).toString('hex'),null],names:[safeName(msg.name),'像素守軍'],ai:true,game:null,disconnectAt:null};rooms.set(id,room);slot=0;
+    const id=randCode();room={id,players:[ws,null],tokens:[crypto.randomBytes(12).toString('hex'),null],names:[safeName(msg.name),'像素守軍'],ai:true,tutorial:msg.tutorial===true,game:null,disconnectAt:null};rooms.set(id,room);slot=0;
   }else if(msg.type==='create'){
     let id=randCode();while(rooms.has(id))id=randCode();room={id,players:[ws,null],tokens:[crypto.randomBytes(12).toString('hex'),null],names:[safeName(msg.name),null],ai:false,game:null,disconnectAt:null};rooms.set(id,room);slot=0;
   }else if(msg.type==='join'&&msg.room){
@@ -573,7 +574,7 @@ function joinRoom(ws,msg){
   wsSend(ws,{type:'joined',room:room.id,slot,token:room.tokens[slot],ai:room.ai,name:room.names[slot]});
   broadcastLobby(room);
   if(room.ai||room.players[0]&&room.players[1]){
-    if(!room.game){room.readyAt=Date.now()+3500;room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.matchId=crypto.randomUUID();room.game.ai=room.ai;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成：先選址建造主基地，基地失守或建城前失去所有村民即戰敗。');}
+    if(!room.game){room.readyAt=Date.now()+3500;room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.matchId=crypto.randomUUID();room.game.ai=room.ai;room.game.tutorial=!!room.tutorial;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成：先選址建造主基地，基地失守或建城前失去所有村民即戰敗。');}
     broadcast(room,{type:'match',members:roomMembers(room),startsInMs:Math.max(0,room.readyAt-Date.now())});
     broadcastState(room);
   }

@@ -103,6 +103,13 @@ test('PostgreSQL account lifecycle, private schema and atomic match history', as
     assert.equal((await engine.query('SELECT COUNT(*)::int AS n FROM windward.game_match_players WHERE match_id=$1', [brokenId])).rows[0].n, 0);
     assert.equal(acquired, released);
     const friendsApi=(url,body,session,options={})=>api(url,body,session,{ip:crypto.randomUUID(),...options});
+    assert.equal((await friendsApi('/api/tutorial',{})).status,401);
+    const completed=await friendsApi('/api/tutorial',{},cookie);assert.equal(completed.status,200);assert.equal(completed.body.settings.tutorialCompleted,true);
+    assert.equal((await api('/api/account',undefined,cookie)).body.user.settings.tutorialCompleted,true);
+    assert.equal((await api('/api/account',undefined,secondCookie)).body.user.settings.tutorialCompleted,undefined);
+    const oldSettingsSave=await friendsApi('/api/profile',{...profile,avatar},cookie);assert.equal(oldSettingsSave.status,200);
+    assert.equal(oldSettingsSave.body.user.settings.tutorialCompleted,true);
+    assert.equal(oldSettingsSave.body.user.avatar,avatar);assert.equal(oldSettingsSave.body.user.bio,profile.bio);
     const otherId=second.body.user.id;
     assert.equal((await friendsApi('/api/friends')).status,401);
     const found=await friendsApi('/api/friends/search?username=player_two',undefined,cookie);

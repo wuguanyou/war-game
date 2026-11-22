@@ -399,6 +399,13 @@
     .lobby-modes{background:linear-gradient(0deg,#202b22b8,transparent);border-color:#b8bb894f}.lobby-modes .menu-choice{color:#dedfc0}.lobby-modes #createRoom::before{border-color:#d2c998;background:linear-gradient(135deg,#697b49,#354b37 55%,#23372e);box-shadow:0 0 0 7px #b8bf8130,0 0 26px #bfcd7350,inset 0 0 25px #c7d08d33}.lobby-modes #createRoom::after{border-color:#dce2ada3}.lobby-modes #createRoom .mode-icon{filter:drop-shadow(0 0 7px #d1df9c)}.lobby-profile{background:#26352a9c}
     .lobby-tools-toggle{display:none}.lobby-tools-toggle svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.5}
     @media(max-width:760px){.lobby-top{flex-wrap:nowrap;align-items:center}.lobby-top .brand{max-width:calc(100% - 75px)}.lobby-tools-toggle{display:flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:8px 12px;border:1px solid #d5d4a38c;border-radius:10px 3px;background:#283b2eea;color:#f0e7c7;font-size:14px;flex:none}.lobby-top-tools{display:none;position:absolute;top:66px;right:0;width:min(355px,100%);z-index:4;background:#24342af5}.lobby-top-tools.is-open{display:grid}.lobby-scene{top:0;height:100%;object-position:37% center}.entry-scene{object-position:37% center}.hero-copy{top:35%;left:auto;right:20px;width:155px;max-width:155px;text-align:center}.hero-copy h1{font-size:32px}.lobby-page::after{background:linear-gradient(0deg,#19251fe6,transparent 52%),linear-gradient(180deg,#1a2a2196,transparent 17%)}.lobby-modes .menu-choice small{font-size:7px}}
+    /* Keep title copy and its start action in normal flow at every viewport height. */
+    .entry-page .entry-layout{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:clamp(28px,4vh,48px);min-height:calc(100dvh - 145px);padding:30px 6vw 60px}
+    .entry-page .title-logo{position:relative;inset:auto;flex:none;width:33vw;max-width:480px}
+    .entry-page .title-start{position:relative;inset:auto;flex:none;width:33vw;min-width:280px;max-width:480px;transform:none;margin:0}
+    .entry-page .entry-footer{position:relative;inset:auto;min-height:40px}
+    .tutorial-shell{position:fixed;inset:0;z-index:55;pointer-events:none}.tutorial-shell[hidden]{display:none}.tutorial-card{position:absolute;top:125px;right:20px;width:min(350px,calc(100vw - 32px));max-height:calc(100dvh - 160px);overflow:auto;padding:22px;background:#23362cf5;color:#e9e9d7;border:1px solid #c2c28c;border-radius:18px 5px;box-shadow:0 15px 55px #08171080;pointer-events:auto}.tutorial-card small{font-size:10px;letter-spacing:.15em;color:#c8ce9a}.tutorial-card h2{font-size:21px;color:#f0e5bd;margin:12px 0}.tutorial-card p{font-size:13px;line-height:1.8;color:#d2dbce;margin:10px 0}.tutorial-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:18px}.tutorial-actions button{min-height:40px}.tutorial-actions .entry-link{font-size:12px;color:#c3cdb9}.tutorial-target{outline:2px solid #e5e9a5!important;outline-offset:4px;box-shadow:0 0 14px #d2e39a80!important}.tutorial-shell.is-intro{display:grid;place-items:center;background:#101c18b8;backdrop-filter:blur(7px);pointer-events:auto}.tutorial-shell.is-intro .tutorial-card{position:relative;inset:auto;width:min(510px,calc(100vw - 28px));max-height:88dvh;padding:30px}.tutorial-shell.is-intro .tutorial-card h2{font-size:26px}#tutorialStatus{font-size:11px;color:#f3d5a1}
+    @media(max-width:760px){.entry-page .entry-layout{align-items:center;justify-content:flex-end;min-height:calc(100dvh - 115px);padding:40vh 7vw 30px;gap:28px}.entry-page .title-logo,.entry-page .title-start{position:relative;inset:auto;width:100%;max-width:380px;min-width:0}.entry-page .entry-footer{font-size:8px;flex-wrap:wrap}.tutorial-card{top:112px;left:10px;right:10px;width:auto;max-height:29dvh;padding:15px}.tutorial-card h2{font-size:17px;margin:7px 0}.tutorial-card p{font-size:12px;margin:7px 0;line-height:1.6}.tutorial-actions{margin-top:10px;gap:10px}.tutorial-shell.is-intro .tutorial-card{max-height:86dvh;padding:24px}}
   </style>
 </head>
 <body>
@@ -422,6 +429,7 @@
             <button class="control" id="profileInGame" type="button">個人資訊／設定</button>
             <button class="control" id="showHistoryGame">歷史戰績</button>
             <button class="control" id="friendsInGame" type="button">好友</button>
+            <button class="control" id="tutorialInGame" type="button">新手教學</button>
             <button class="control" id="copyRoom">分享房間</button>
             <button class="control" id="leaveRoom">返回大廳</button>
           </div>
@@ -499,6 +507,7 @@
         <div class="lobby-top-tools" id="lobbyTools">
           <span class="connection-chip"><i class="connection" id="lobbyConnectionDot" aria-hidden="true"></i><span id="lobbyConnectionText">未連線</span></span>
           <button class="control" id="lobbyGuide" type="button">操作指南</button>
+          <button class="control" id="tutorialInLobby" type="button">新手教學</button>
           <button class="control" id="showHistory" type="button">歷史戰績</button>
           <button class="control" id="openProfile" type="button">個人資訊／設定</button>
           <button class="control" id="openFriends" type="button">好友</button>
@@ -539,6 +548,7 @@
     </div>
   </main>
 
+  <section class="tutorial-shell" id="tutorialShell" hidden><div class="tutorial-card" id="tutorialCard" tabindex="-1" aria-labelledby="tutorialTitle"><small id="tutorialStep">指揮官入門</small><h2 id="tutorialTitle"></h2><p id="tutorialBody"></p><p id="tutorialStatus" role="status"></p><div class="tutorial-actions"><button class="fantasy-button" id="tutorialAction" type="button"></button><button class="entry-link" id="tutorialSkip" type="button">略過教學</button><button class="entry-link" id="tutorialDismiss" type="button" hidden>暫時關閉</button></div></div></section>
   <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>主基地完工後，按「招募村民」花費糧45、訓練13秒；可從招募面板查看佇列。農場自動產糧，採集站提供鄰格採集加速但仍需村民。</li><li>選取自家建築可拆除，四秒內再次點擊確認。完工退還一半建材，未完工全額退還；訓練佇列另全額退款。已完工主基地不能拆除。弓箭手可越過城牆與城門射擊，仍受射程與視野限制。</li><li>雙方從左上與右下出發，開局各有四名村民。選村民後按「主基地」，再點視野內空地建城；也可點空地自動派遣村民。主基地完工後才能建造其他建築，每方限一座。基地被摧毀，或建城前失去所有村民即戰敗。</li><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <main class="entry-page" id="accountModal" aria-labelledby="entryTitle" data-account="guest">
     <img class="entry-scene" src="assets/cover-frontline-v2.jpg" alt="" fetchpriority="high">
@@ -721,6 +731,7 @@
           setLobbyBusy(false);
           setLobbyStatus('');
         }
+        if(tutorialRunning&&tutorialStep===0)showTutorialStep();
       };
       ws.onclose=()=>{
         setConnection(false,'重新連線中');
@@ -778,7 +789,7 @@
           selected=new Set([...selected].filter(id=>message.units.some(u=>u.id===id&&u.owner===slot)));
           $('lobbyPage').hidden=true;
           $('game').hidden=false;
-          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden')||!$('profileModal').classList.contains('hidden')||!$('friendsModal').classList.contains('hidden')||!$('matchFound').classList.contains('hidden');
+          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden')||!$('profileModal').classList.contains('hidden')||!$('friendsModal').classList.contains('hidden')||!$('matchFound').classList.contains('hidden')||(!$('tutorialShell').hidden&&$('tutorialShell').classList.contains('is-intro'));
           $('result').classList.toggle('show',!!message.ended);
           if(entering){
             const base=message.buildings.find(b=>b.type==='base');
@@ -796,7 +807,7 @@
             $('resultTitle').textContent=message.winner===-1?'戰局平手':message.winner===slot?'戰區勝利':'戰區失守';
             $('resultText').textContent=message.winner===-1?'雙方失去據點與建造能力。':message.winner===slot?'敵方基地已摧毀，或建城前已失去所有村民。':'你的基地已摧毀，或建城前已失去所有村民。';
             if(finished){guide.classList.add('hidden');$('resultAgain').focus()}
-            setText('resultSave',currentAccount?(message.historySaved?'戰績已保存':'正在保存戰績…'):'訪客對局。登入帳號後可保存之後的戰績。');
+            setText('resultSave',message.tutorial?'教學練習不列入歷史戰績。':currentAccount?(message.historySaved?'戰績已保存':'正在保存戰績…'):'訪客對局。登入帳號後可保存之後的戰績。');
           }
           renderUI();
         }else if(message.type==='historySaved'){
@@ -823,10 +834,11 @@
         }
       };
     }
-    function startJoin(kind,button){
+    function startJoin(kind,button,tutorial=false){
       if(lobbyBusy||ws?.readyState!==1)return;
       const name=$('nameInput').value.trim()||'指揮官';
       const data={name,tileDeltas:true,avatar:currentAccount?.avatar||readLocal('windwardGuestProfile',{}).avatar||'compass:mint'};
+      if(kind==='practice'&&tutorial)data.tutorial=true;
       if(kind==='join'){
         data.room=$('roomInput').value.trim().toUpperCase();
         if(!/^[A-F0-9]{6}$/.test(data.room)){
@@ -1287,6 +1299,7 @@
         }
       }
       needsDraw=true;
+      updateTutorial();
     }
     function renderUnitList(units){
       const list=$('unitList');
@@ -1946,9 +1959,83 @@
       const tick=()=>{const left=Math.max(0,Math.ceil((until-performance.now())/1000));setText('matchCountdown',left?`${left} 秒後展開戰局`:'出征！');if(!left){clearInterval(matchTimer);$('matchFound').classList.add('hidden');lockForAccountModal();if(!$('game').inert)canvas.focus();}};
       tick();matchTimer=setInterval(tick,150);
     }
+    let tutorialRunning=false,tutorialWaiting=false,tutorialStep=0,tutorialBusy=false,tutorialTimer=null,tutorialInitialVillagers=4,tutorialReturnFocus=null,tutorialError='',tutorialSnoozed=false;
+    const TUTORIAL_STEPS=[
+      {title:'歡迎來到群島，指揮官',body:'從4名村民開始，自己選擇基地位置。基地完工後才能建造其他建築；摧毀敵方基地即可獲勝，建城前失去所有村民也會戰敗。接下來用一場不計戰績的練習，實際學會操作。',action:'開始練習教學'},
+      {title:'移動你的村民',body:'左鍵點人物可以選取，再左鍵點附近的空地移動。開局已幫你選好村民；也可拖曳框選或按 Shift 加選。手機先選人物，再按「下達指令」並點空地。',action:'選取村民',target:'#unitActions'},
+      {title:'自己選擇基地位置',body:'按「主基地」，再點目前視野內的空地放置。避開人物、水域與資源格；可以先移動村民探索，再決定建在哪裡。主基地花費木80、石40。',action:'準備放置基地',target:'[data-building="base"]'},
+      {title:'等待基地完工',body:'村民會走到工地旁施工，多位村民可加快進度。基地完工後才解鎖兵營、農場、採集站與防禦建築。施工若中斷，可選工地繼續建造。',action:''},
+      {title:'從基地招募村民',body:'按「招募村民」花費糧45，13秒後從基地旁加入部隊。招募面板會顯示訓練佇列；出口被擋住時，先把附近人物移開。',action:'招募一名村民',target:'#hireVillager'},
+      {title:'讓經濟持續運作',body:'選村民後，左鍵點樹木、礦石或莓果即可採集。頂部圖示顯示資源，滑鼠移上去可看名稱。農場自動產糧，採集站讓附近村民採集加速。',action:'選取村民',target:'#wood'},
+      {title:'建立你的兵營',body:'基地完工後，在視野內空地建兵營（木100、石35）。記得留出通路；兵營完工後才可訓練戰鬥單位。',action:'準備放置兵營',target:'[data-building="barracks"]'},
+      {title:'招募第一支戰鬥部隊',body:'右鍵兵營或開啟招募面板選兵種。劍士適合近戰，弓箭手可以越牆射擊，長槍兵克制攻城車，攻城車擅長拆建築。先訓練一名劍士。',action:'開啟兵營招募',target:'#trainButtons'},
+      {title:'準備好出征了',body:'選部隊後左鍵點敵人或敵方建築即可攻擊，必須先偵察到目標。右鍵自家城門可開關，中鍵拖曳／WASD移動鏡頭，滾輪縮放。你可以繼續這場練習，或從選單返回大廳。',action:'完成教學'}
+    ];
+    function tutorialKey(){return 'windwardTutorial:'+(currentAccount?.id||'guest');}
+    function hasFinishedTutorial(){return !!currentAccount?.settings?.tutorialCompleted||readLocal(tutorialKey(),false)===true;}
+    function clearTutorialTarget(){for(const node of document.querySelectorAll('.tutorial-target'))node.classList.remove('tutorial-target');}
+    function showTutorialStep(){
+      const step=TUTORIAL_STEPS[tutorialStep],intro=tutorialStep===0;
+      $('tutorialShell').hidden=false;$('tutorialShell').classList.toggle('is-intro',intro);
+      $('tutorialCard').setAttribute('role',intro?'dialog':'region');if(intro)$('tutorialCard').setAttribute('aria-modal','true');else $('tutorialCard').removeAttribute('aria-modal');
+      setText('tutorialStep',intro?'指揮官入門':`實戰教學 ${tutorialStep} / 8`);setText('tutorialTitle',step.title);setText('tutorialBody',step.body);
+      $('tutorialAction').hidden=!step.action;$('tutorialAction').disabled=tutorialBusy||intro&&(!state&&(ws?.readyState!==1||lobbyBusy||!!room));
+      setText('tutorialAction',step.action);$('tutorialSkip').disabled=tutorialBusy;
+      if(intro&&state){setText('tutorialBody','你可以在目前戰局查看操作步驟，這場戰局仍依原模式計算戰績。若想從零開始，請返回大廳後再開啟教學，便可進入不計戰績的練習。');setText('tutorialAction','在本場查看步驟');}
+      if(!tutorialBusy)setText('tutorialStatus',tutorialError||(intro&&room&&!state?'請先離開目前的等待房間，再開始教學。':tutorialStep===3&&ownBase()?`施工進度 ${Math.min(100,Math.floor(ownBase().progress/ownBase().buildTime*100))}%`:tutorialStep>0&&tutorialStep<8?'完成上方操作後，會自動進入下一步。':''));
+      clearTutorialTarget();const target=step.target&&document.querySelector(step.target);if(target&&target.getClientRects().length)target.classList.add('tutorial-target');
+    }
+    function openTutorial(){
+      if(state?.ended){showToast('請先返回大廳，再開始教學。');return;}
+      gameMenu.open=false;closeLobbyTools();tutorialReturnFocus=document.activeElement;
+      tutorialRunning=true;tutorialWaiting=false;tutorialStep=0;tutorialError='';tutorialSnoozed=false;$('tutorialDismiss').hidden=true;showTutorialStep();lockForAccountModal();$('tutorialCard').focus();
+    }
+    function updateTutorial(){
+      if(state?.tutorial&&!tutorialRunning&&!tutorialSnoozed&&!hasFinishedTutorial()){
+        tutorialRunning=true;tutorialWaiting=true;tutorialStep=1;
+        clearInterval(tutorialTimer);tutorialTimer=setInterval(updateTutorial,250);
+      }
+      if(!tutorialRunning||tutorialStep===0&&!tutorialWaiting)return;
+      if(state?.ended){$('tutorialShell').hidden=true;clearTutorialTarget();return;}
+      const blocked=['accountModal','historyModal','profileModal','friendsModal','matchFound'].some(id=>!$(id).classList.contains('hidden'))||!guide.classList.contains('hidden');
+      if(!state||blocked){$('tutorialShell').hidden=true;clearTutorialTarget();return;}
+      if(tutorialWaiting){tutorialWaiting=false;tutorialStep=1;tutorialInitialVillagers=state.units.filter(u=>u.owner===slot&&u.type==='villager').length;}
+      const base=ownBase(),owned=state.units.filter(u=>u.owner===slot),barracks=state.buildings.find(b=>b.type==='barracks');
+      const done=step=>step===1?(!!base||owned.some(u=>u.moving&&['move','attackMove'].includes(u.order?.kind))):step===2?!!base:step===3?base&&!base.underConstruction:step===4?base?.queue.some(q=>q.unit==='villager')||owned.filter(u=>u.type==='villager').length>tutorialInitialVillagers:step===5?owned.some(u=>u.order?.kind==='gather'):step===6?barracks&&!barracks.underConstruction:step===7?barracks?.queue.some(q=>q.unit!=='villager')||owned.some(u=>u.type!=='villager'):false;
+      while(tutorialStep<8&&done(tutorialStep))tutorialStep++;
+      showTutorialStep();
+    }
+    function selectTutorialVillagers(){
+      selected=new Set(state.units.filter(u=>u.owner===slot&&u.type==='villager').map(u=>u.id));selectedTile=null;renderUI();
+    }
+    $('tutorialAction').onclick=()=>{
+      if(tutorialBusy)return;
+      if(tutorialStep===0){
+        tutorialWaiting=true;$('tutorialShell').hidden=true;lockForAccountModal();
+        clearInterval(tutorialTimer);tutorialTimer=setInterval(updateTutorial,250);
+        if(!state)startJoin('practice',$('practice'),true);else updateTutorial();return;
+      }
+      if(tutorialStep===8){finishTutorial();return;}
+      if([1,2,5,6].includes(tutorialStep))selectTutorialVillagers();
+      if(tutorialStep===2||tutorialStep===6){pendingBuild=tutorialStep===2?'base':'barracks';autoBarracks=false;attackMode=false;orderMode=false;renderUI();canvas.focus();}
+      else if(tutorialStep===4)$('hireVillager').click();
+      else if(tutorialStep===7){const b=state.buildings.find(b=>b.type==='barracks'&&!b.underConstruction);if(b)openRecruitmentAt(tileState(b.x,b.y));}
+    };
+    async function finishTutorial(){
+      if(tutorialBusy)return;tutorialBusy=true;tutorialError='';$('tutorialDismiss').hidden=true;setText('tutorialStatus','正在儲存教學進度…');$('tutorialAction').disabled=true;$('tutorialSkip').disabled=true;
+      try{
+        if(currentAccount){const data=await accountApi('/api/tutorial',{});currentAccount.settings={...currentAccount.settings,...data.settings};}
+        localStorage.setItem(tutorialKey(),'true');tutorialRunning=false;tutorialWaiting=false;$('tutorialShell').hidden=true;clearInterval(tutorialTimer);clearTutorialTarget();lockForAccountModal();
+        if(state&&!$('game').inert)canvas.focus();else tutorialReturnFocus?.focus();showToast('教學進度已保存，可隨時從選單重新開啟。');
+      }catch(error){tutorialError='教學進度尚未儲存：'+error.message+' 可重試或暫時關閉，下次登入仍會提醒。';setText('tutorialStatus',tutorialError);$('tutorialDismiss').hidden=false;}
+      finally{tutorialBusy=false;$('tutorialAction').disabled=false;$('tutorialSkip').disabled=false;}
+    }
+    $('tutorialSkip').onclick=finishTutorial;$('tutorialInLobby').onclick=openTutorial;$('tutorialInGame').onclick=openTutorial;
+    $('tutorialDismiss').onclick=()=>{tutorialSnoozed=true;tutorialRunning=false;tutorialWaiting=false;$('tutorialShell').hidden=true;clearInterval(tutorialTimer);clearTutorialTarget();lockForAccountModal();};
     function lockForAccountModal(){
       const profileOpen=!$('profileModal').classList.contains('hidden')||!$('friendsModal').classList.contains('hidden');
-      const modalOpen=profileOpen||!$('matchFound').classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
+      const tutorialIntro=!$('tutorialShell').hidden&&$('tutorialShell').classList.contains('is-intro');
+      const modalOpen=tutorialIntro||profileOpen||!$('matchFound').classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
       $('lobbyPage').inert=modalOpen||!guide.classList.contains('hidden');
       $('game').inert=modalOpen||!state||!!state.ended||!guide.classList.contains('hidden');
       $('result').inert=modalOpen;
@@ -1981,11 +2068,13 @@
       $('accountModal').classList.add('hidden');
       $('entryDrawer').hidden=true;
       $('accountPassword').value='';
-      if(!hasEntered){hasEntered=true;$('lobbyPage').hidden=false;connect();}
+      const firstEntry=!hasEntered;
+      if(firstEntry){hasEntered=true;$('lobbyPage').hidden=false;connect();}
       lockForAccountModal();
       if(state&&!$('game').hidden)(state.ended?$('resultAgain'):canvas).focus();
       else if(accountReturnFocus?.isConnected&&!accountReturnFocus.closest('#accountModal'))accountReturnFocus.focus();
       else $('lobbyTitle').focus();
+      if(firstEntry&&currentAccount&&!hasFinishedTutorial()&&!sessionStorage.getItem('frontierRoom'))openTutorial();
     }
     function refreshAccountEntry(){
       refreshProfileIdentity();
@@ -2149,11 +2238,11 @@
     }
     document.addEventListener('keydown',event=>{
       if(!guide.classList.contains('hidden'))return;
-      const modal=!$('friendsModal').classList.contains('hidden')?$('friendsModal'):!$('profileModal').classList.contains('hidden')?$('profileModal'):!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
+      const modal=!$('tutorialShell').hidden&&$('tutorialShell').classList.contains('is-intro')?$('tutorialCard'):!$('friendsModal').classList.contains('hidden')?$('friendsModal'):!$('profileModal').classList.contains('hidden')?$('profileModal'):!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
       if(!modal)return;
       if(event.key==='Escape'){
         event.preventDefault();event.stopImmediatePropagation();
-        if(modal.id==='friendsModal')closeFriends();else if(modal.id==='profileModal')closeProfile();else if(modal.id==='entryDrawer')closeAccount();else closeHistory();
+        if(modal.id==='tutorialCard')finishTutorial();else if(modal.id==='friendsModal')closeFriends();else if(modal.id==='profileModal')closeProfile();else if(modal.id==='entryDrawer')closeAccount();else closeHistory();
       }
       if(event.key==='Tab'){
         const focusable=[...modal.querySelectorAll('button,input,textarea,select')].filter(node=>!node.disabled&&node.getClientRects().length);
