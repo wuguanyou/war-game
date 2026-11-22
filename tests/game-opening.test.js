@@ -5,7 +5,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../server'),'utf8').split('const server=http.createServer')[0];
 const context=vm.createContext({require:name=>name==='./accounts'?{}:require(name),process,console,Buffer,setTimeout,clearTimeout});
-vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding};',context);
+vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding,makeUnit,lineOfSight,recordIncome,flushIncome,serialize};',context);
 const R=context.gameRules;
 function fresh(seed=1){const g=R.startGame(seed);R.updateVision(g);return g;}
 function step(g,seconds){for(let t=0;t<seconds;t+=.1){g.elapsed+=.1;R.moveUnits(g,.1);R.updateVision(g);R.attackAndGather(g,.1);R.tickBuildings(g,.1);R.cleanupAndVictory(g);}}
@@ -51,4 +51,66 @@ test('AI builds its base before barracks and resumes an interrupted base',()=>{
   R.aiPlay(room);assert.ok(g.units.some(u=>u.owner===1&&u.order?.kind==='build'));
   step(g,15);assert.equal(b.underConstruction,false);
   R.aiPlay(room);assert.ok(g.tiles.some(t=>t.building?.owner===1&&t.building.type==='barracks'));
+});
+test('demolition verifies ownership and identity, refunds materials and queued recruits, and stops workers',()=>{
+  const g=fresh(),t=g.tiles[R.idx(6,6)];t.building=R.makeBuilding(0,'barracks',6,6);const id=t.building.id;
+  t.building.queue=[{unit:'sword',remaining:4}];
+  const before={...g.players[0].resources};
+  const command={action:'demolish',x:6,y:6,buildingId:id};
+  R.applyCommand(g,1,command);assert.equal(t.building.id,id);
+  R.applyCommand(g,0,{...command,buildingId:'stale'});assert.equal(t.building.id,id);
+  g.units[0].order={kind:'build',buildingId:id};
+  R.applyCommand(g,0,command);assert.equal(t.building,null);assert.equal(g.units[0].order,null);
+  assert.equal(g.players[0].resources.wood,before.wood+50+15);
+  assert.equal(g.players[0].resources.stone,before.stone+17);
+  assert.equal(g.players[0].resources.food,before.food+55);
+  R.applyCommand(g,0,command);assert.equal(g.players[0].resources.wood,before.wood+65);
+});
+test('unfinished base cancellation permits another location; completed bases cannot be demolished',()=>{
+  const g=fresh(),wood=g.players[0].resources.wood;
+  build(g,'base');let b=R.playerBase(g,0);
+  R.applyCommand(g,0,{action:'demolish',x:6,y:6,buildingId:b.id});
+  assert.equal(g.players[0].resources.wood,wood);assert.equal(g.players[0].hasPlacedBase,false);
+  R.cleanupAndVictory(g);assert.equal(g.ended,false);
+  build(g,'base',5,5);step(g,12);b=R.playerBase(g,0);
+  R.applyCommand(g,0,{action:'demolish',x:5,y:5,buildingId:b.id});assert.equal(R.playerBase(g,0).id,b.id);
+});
+test('archers shoot across walls and closed gates while buildings still block arrows',()=>{
+  for(const type of ['wall','gate','barracks']){
+    const g=fresh();for(let x=5;x<=9;x++){const t=g.tiles[R.idx(x,6)];t.terrain='grass';t.resource=null;}
+    const archer=R.makeUnit(g,0,'archer',5,6),enemy=R.makeUnit(g,1,'sword',9,6);
+    g.units=[archer,enemy];g.tiles[R.idx(7,6)].building=R.makeBuilding(1,type,7,6);
+    R.updateVision(g);archer.stance='hold';
+    assert.equal(R.lineOfSight(g,archer,enemy),false);
+    assert.equal(R.lineOfSight(g,archer,enemy,true),type!=='barracks');
+    R.attackAndGather(g,.1);
+    assert.equal(enemy.hp<enemy.maxHp,type!=='barracks');
+    if(type!=='barracks')assert.equal(archer.path.length,0);
+  }
+});
+test('income numbers aggregate, throttle and represent actual gains; farms produce without workers',()=>{
+  const g=fresh();g.elapsed=1;
+  for(let i=0;i<20;i++)R.recordIncome(g,0,'wood',.1,6.5,6.5);
+  R.flushIncome(g);assert.equal(g.effects.length,0);
+  g.elapsed=4.1;R.flushIncome(g);assert.equal(g.effects.length,1);assert.equal(g.effects[0].amount,2);
+  for(let i=0;i<10;i++)R.recordIncome(g,0,'stone',2,15+i,15);
+  g.elapsed=8;R.flushIncome(g);assert.equal(g.effects.length,2);
+  R.flushIncome(g);assert.equal(g.effects.length,2);
+  const before=g.players[0].resources.food;g.tiles[R.idx(6,6)].building=R.makeBuilding(0,'farm',6,6);
+  R.tickBuildings(g,60);assert.ok(Math.abs(g.players[0].resources.food-before-11.4)<1e-8);
+});
+test('villagers cost food, train in a completed base, and spawn without overlapping objects',()=>{
+  const g=fresh();build(g,'base');const b=R.playerBase(g,0),food=g.players[0].resources.food;
+  const cmd={action:'train',unit:'villager',x:6,y:6};
+  R.applyCommand(g,0,cmd);assert.equal(b.queue.length,0);
+  step(g,12);R.applyCommand(g,0,cmd);assert.equal(b.queue.length,1);assert.equal(g.players[0].resources.food,food-45);
+  assert.equal(b.queue[0].remaining,13);const count=g.units.length;
+  step(g,14);assert.equal(g.units.length,count+1);assert.equal(b.queue.length,0);
+  const recruit=g.units.at(-1);assert.equal(recruit.type,'villager');assert.ok(R.passable(g,R.idx(Math.floor(recruit.x),Math.floor(recruit.y))));
+});
+
+test('building ownership reaches the client and income numbers remain private',()=>{
+ const g=fresh();g.tiles[R.idx(6,6)].building=R.makeBuilding(0,'farm',6,6);
+ g.effects=[{kind:'income',owner:0,resource:'food',amount:2,x:6.5,y:6.5,at:0},{kind:'income',owner:1,resource:'wood',amount:3,x:6.5,y:6.5,at:0}];
+ const packet=R.serialize(g,0);assert.equal(packet.buildings[0].owner,0);assert.equal(packet.effects.length,1);assert.equal(packet.effects[0].owner,0);
 });

@@ -220,6 +220,8 @@
       .match{left:8px;top:8px}
       .map-tools{right:8px;top:8px}
       .dock{flex-direction:column-reverse;align-items:stretch}
+      .dock-tools{margin-left:0;justify-content:flex-end;flex-wrap:wrap}
+      #hireVillager{max-width:calc(100vw - 190px);font-size:11px}
       .side{max-height:43dvh}
       .context{width:100%}
       .minimap-shell{width:84px}
@@ -412,6 +414,7 @@
             <div id="contextBody" class="stats"></div>
             <button class="game-button" id="gateToggle" type="button" hidden>開城門</button>
             <button class="game-button" id="recruitFromBuilding" type="button" hidden>開啟招募</button>
+            <button class="game-button" id="demolishBuilding" type="button" hidden>拆除建築</button>
           </div>
           <div class="section" id="buildActions" hidden><div class="section-title" id="buildTitle">建造</div><div class="button-grid" id="buildButtons"></div><div class="note" id="buildNote"></div></div>
           <div class="section" id="unitActions" hidden>
@@ -429,6 +432,7 @@
           </div>
         </aside>
         <div class="dock-tools">
+          <button class="game-button" id="hireVillager" type="button" disabled title="主基地完工後，花費糧45訓練一名村民，需13秒。">先完成基地以招募村民</button>
           <details class="feed" id="recruitMenu">
             <summary>招募部隊</summary>
             <div class="feed-content recruit-content">
@@ -494,7 +498,7 @@
     </div>
   </main>
 
-  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>雙方從左上與右下出發，開局各有四名村民。選村民後按「主基地」，再點視野內空地建城；也可點空地自動派遣村民。主基地完工後才能建造其他建築，每方限一座。基地被摧毀，或建城前失去所有村民即戰敗。</li><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>主基地完工後，按「招募村民」花費糧45、訓練13秒；可從招募面板查看佇列。農場自動產糧，採集站提供鄰格採集加速但仍需村民。</li><li>選取自家建築可拆除，四秒內再次點擊確認。完工退還一半建材，未完工全額退還；訓練佇列另全額退款。已完工主基地不能拆除。弓箭手可越過城牆與城門射擊，仍受射程與視野限制。</li><li>雙方從左上與右下出發，開局各有四名村民。選村民後按「主基地」，再點視野內空地建城；也可點空地自動派遣村民。主基地完工後才能建造其他建築，每方限一座。基地被摧毀，或建城前失去所有村民即戰敗。</li><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <main class="entry-page" id="accountModal" aria-labelledby="entryTitle" data-account="guest">
     <img class="entry-scene" src="assets/cover-windward-v3.jpg" alt="" fetchpriority="high">
     <div class="title-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -576,6 +580,8 @@
     const TERRAIN_COLORS={grass:['#83ac60','#88ae63','#7fa659','#8bb168'],forest:['#6a9255','#729758','#688f54','#709353'],stone:['#92917d','#97957e','#8f8e7c','#999883'],gold:['#a39a67','#a99c66','#9d9465','#a49a6a'],berry:['#809e58','#829f5c','#7c9c58','#84a15e'],water:['#326e8b','#377492','#316e8b','#39738e']};
     const U={villager:{name:'村民',icon:'V',range:.8,vision:4,cost:'糧45',patterns:['0001000','0011100','0111110','0011100','0011100','0110110','0100010']},sword:{name:'劍士',icon:'S',range:1.25,vision:4,cost:'糧55 木15',patterns:['0001000','0001100','0111110','0011100','0011100','0101010','1100011']},archer:{name:'弓箭手',icon:'A',range:5.2,vision:6,cost:'糧45 木28',patterns:['0001000','0011100','0110110','0011100','0011100','0101010','1000001']},pike:{name:'長槍兵',icon:'P',range:1.35,vision:4,cost:'糧55 木20',patterns:['0001000','0001000','0111110','0011100','0011100','0101010','1100011']},siege:{name:'攻城車',icon:'C',range:3.1,vision:3.5,cost:'木70 石55 金20',patterns:['0000000','0111110','1111111','1011101','1111111','0101010','1010101']}};
     const B={base:{name:'主基地',icon:'▣'},barracks:{name:'兵營',icon:'▤'},tower:{name:'防禦塔',icon:'♜'},farm:{name:'農場',icon:'▥'},gather:{name:'採集站',icon:'⚒'},wall:{name:'城牆',icon:'▥'},gate:{name:'城門',icon:'▣'}};
+    const BUILDING_HELP={base:'解鎖其他建築；花費糧45、13秒招募村民。完工後不可拆除，失守即戰敗。',barracks:'訓練劍士、弓箭手、長槍兵與攻城車。右鍵開啟招募。',tower:'自動攻擊射程5.8格內可見敵軍，提供7格視野。',farm:'完工後自動產糧，每分鐘11.4糧，不需派村民，也不會耗盡。',gather:'蓋在木、石或金礦上；本站與相鄰四格的村民採集速度提高55%。仍需派村民採集，不會自動產出。',wall:'阻擋地面部隊通行；弓箭手可越牆射擊。',gate:'右鍵開關；開門允許雙方通行，關門阻擋通行。弓箭手可越門射擊。'};
+    const BUILDING_BRIEF={base:'解鎖建築 · 招募村民',barracks:'訓練四種戰鬥部隊',tower:'自動防禦 · 射程5.8格',farm:'自動產糧 · 11.4糧／分',gather:'鄰近採集加速55% · 需村民',wall:'阻擋通行 · 弓箭可越牆',gate:'可開關 · 弓箭可越門'};
     const isFortification=type=>type==='wall'||type==='gate';
     const RES={wood:'木材',stone:'石材',gold:'黃金',food:'糧食'};
     let ws=null,state=null,slot=0,room='',selected=new Set(),selectedTile=null,attackMode=false,pendingBuild=null,toastTimer=null,lastLogKey='',camera={x:SIZE/2,y:SIZE/2,zoom:1},dpr=1,viewW=0,viewH=0,lastFrame=0,keys=new Set(),drag=null,roomAi=false,reconnectTimer=null,reconnectDelay=1000,resumeAttempt=false,lobbyBusy=false,lastLobbyAction=null;
@@ -943,6 +949,7 @@
       if(!building||(!tile.visible&&!tile.remembered)){tip.hidden=true;return;}
       const own=building.owner===slot;
       const details=[own?'我方':'敵方',`耐久 ${Math.ceil(building.hp)} / ${building.maxHp}`];
+      details.push(BUILDING_HELP[building.type]);
       if(building.underConstruction)details.push(`施工 ${Math.floor(building.progress/building.buildTime*100)}%`);
       else if(building.type==='gate')details.push(building.closeRequested?'等待單位離開後關門':building.open?'城門已開啟':'城門已關閉');
       if(own&&tile.visible){
@@ -1094,7 +1101,7 @@
     });
     window.addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));window.addEventListener('blur',()=>keys.clear());window.addEventListener('resize',resize);
     function loop(now){const dt=Math.min(.05,(now-lastFrame)/1000||0);lastFrame=now;let vx=0,vy=0;if(keys.has('w')||keys.has('arrowup'))vy--;if(keys.has('s')||keys.has('arrowdown'))vy++;if(keys.has('a')||keys.has('arrowleft'))vx--;if(keys.has('d')||keys.has('arrowright'))vx++;if(vx||vy){camera.x+=vx*dt*9/camera.zoom;camera.y+=vy*dt*9/camera.zoom;clampCamera();needsDraw=true}
-      const animation=state&&!state.ended&&(state.units.some(u=>u.moving||u.work||now-u.receivedAt<u.duration)||(state.effects??[]).some(e=>state.elapsed+(now-state.receivedAt)/1000-e.at<.75));
+      const animation=state&&!state.ended&&(state.units.some(u=>u.moving||u.work||now-u.receivedAt<u.duration)||(state.effects??[]).some(e=>state.elapsed+(now-state.receivedAt)/1000-e.at<(e.kind==='income'?1.2:.75)));
       if(state&&(needsDraw||orderMarker||drag?.moved||animation))draw();
       requestAnimationFrame(loop)}
     function unitIcon(type){return `<span class="unit-icon" aria-hidden="true" style="--unit-row:${UNIT_ROWS[type]*25}%"></span>`;}
@@ -1130,6 +1137,15 @@
       const tile=selectedTile?tileState(selectedTile.x,selectedTile.y):null;
       const building=tile&&(state.buildings?.find(b=>b.x===tile.x&&b.y===tile.y)||tile.building);
       $('recruitFromBuilding').hidden=hasUnits||building?.owner!==slot||!TRAINING[building.type]||state.ended;
+      const demolish=$('demolishBuilding');
+      demolish.hidden=hasUnits||building?.owner!==slot||!tile?.visible||state.ended;
+      demolish.disabled=building?.type==='base'&&!building.underConstruction;
+      const confirming=demolitionId===building?.id&&performance.now()<demolitionUntil;
+      demolish.textContent=demolish.disabled?'主基地不可拆除':confirming?'再次點擊確認拆除':building?.underConstruction?'取消施工 · 全額退還':'拆除 · 退還50%建材';
+      demolish.title='訓練佇列另全額退還；拆除後無法復原。';
+      const base=ownBase(),hire=$('hireVillager');
+      hire.disabled=state.ended||!base||base.underConstruction||base.queue.length>=5||state.resources.food<45;
+      hire.textContent=!base||base.underConstruction?'先完成基地以招募村民':`招募村民 · 糧45${base.queue.length?` · 排隊${base.queue.length}`:''}`;
       const gateToggle=$('gateToggle');
       gateToggle.hidden=hasUnits||building?.type!=='gate'||building.owner!==slot||building.underConstruction||state.ended;
       if(!gateToggle.hidden)gateToggle.textContent=building.closeRequested?'取消自動關門':building.open?'關城門':'開城門';
@@ -1186,7 +1202,7 @@
         $('contextSub').textContent=`${owner}${tile.x+1}, ${tile.y+1}${gateStatus}${tile.remembered?' · 最後情報':''}`;
         const resource=tile.resource?`<div class="stat"><label>剩餘資源</label><strong>${Math.floor(tile.amount||0)}</strong></div>`:'';
         const structure=building?`<div class="stat"><label>${building.underConstruction?'施工進度':'建築耐久'}</label><strong>${building.underConstruction?`${Math.floor(building.progress/building.buildTime*100)}%`:`${Math.ceil(building.hp)} / ${building.maxHp}`}</strong></div>`:'';
-        $('contextBody').innerHTML=resource+structure;
+        $('contextBody').innerHTML=resource+structure+(building?`<p class="note">${BUILDING_HELP[building.type]}</p>`:'');
       }
       if(state.logs){
         const key=state.logs.map(log=>log.at+':'+log.text).join('|');
@@ -1224,13 +1240,30 @@
       send('command',{command:{action:'gate',x:tile.x,y:tile.y,open:gate.closeRequested||!gate.open}});
     }
     $('gateToggle').onclick=()=>{if(selectedTile)toggleGate(tileState(selectedTile.x,selectedTile.y));};
+    let demolitionId='',demolitionUntil=0;
+    $('demolishBuilding').onclick=()=>{
+      const b=selectedTile&&tileState(selectedTile.x,selectedTile.y)?.building;
+      if(!b||b.owner!==slot||b.type==='base'&&!b.underConstruction)return;
+      if(demolitionId!==b.id||performance.now()>=demolitionUntil){
+        demolitionId=b.id;demolitionUntil=performance.now()+4000;
+        renderUI();setTimeout(()=>{if(state)renderUI();},4100);return;
+      }
+      send('command',{command:{action:'demolish',x:b.x??selectedTile.x,y:b.y??selectedTile.y,buildingId:b.id}});
+      demolitionId='';demolitionUntil=0;
+    };
+    $('hireVillager').onclick=()=>{
+      const base=ownBase();if(!base||$('hireVillager').disabled)return;
+      send('command',{command:{action:'train',unit:'villager',x:base.x,y:base.y}});
+      openRecruitmentAt(tileState(base.x,base.y));
+    };
     function setupBuildActions(){
       const builds=[['base','木80 石40',8],['barracks','木100 石35',6],['tower','木42 石58',6],['farm','木52',4],['gather','木45 石18',4],['wall','石20',2],['gate','木25 石25',3]];
       for(const [type,cost,time] of builds){
         const button=document.createElement('button');
         button.className='game-button';
         button.dataset.building=type;
-        button.innerHTML=`${buildingIcon(type)}<span data-build-label>${B[type].name}</span><em>${cost} · ${time}秒</em>`;
+        button.title=BUILDING_HELP[type];
+        button.innerHTML=`${buildingIcon(type)}<span data-build-label>${B[type].name}</span><em>${cost} · ${time}秒</em><em>${BUILDING_BRIEF[type]}</em>`;
         button.onclick=()=>{
           if(!state||state.ended)return;
           const tile=selectedTile&&tileState(selectedTile.x,selectedTile.y);
@@ -1526,6 +1559,13 @@
     function drawEffects(clock){
       for(const e of state.effects||[]){
         const age=clock-e.at;
+        if(e.kind==='income'){
+          if(age<0||age>=1.2)continue;
+          ctx.save();ctx.globalAlpha=.68*Math.min(1,(1.2-age)/.4);
+          ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillStyle='#e2edc7';
+          ctx.shadowColor='#163a30';ctx.shadowBlur=2;
+          ctx.fillText(`+${e.amount} ${RES[e.resource]}`,e.x*TILE,e.y*TILE-16-age*9);ctx.restore();continue;
+        }
         if(age<0||age>=.75)continue;
         const x=e.x*TILE,y=e.y*TILE;
         if(e.kind==='defeat'){
@@ -1540,7 +1580,7 @@
         if(age<launch)continue;
         if(age<launch+flight){
           const p=(age-launch)/flight,sy=y-(e.kind==='tower'?28:11);
-          const cx=x+(tx-x)*p,cy=sy+(ty-sy)*p-Math.sin(p*Math.PI)*(e.kind==='shell'?17:5);
+          const cx=x+(tx-x)*p,cy=sy+(ty-sy)*p-Math.sin(p*Math.PI)*(e.kind==='shell'?17:e.kind==='arrow'?20:5);
           const angle=Math.atan2(ty-sy,tx-x);
           ctx.save();ctx.translate(Math.round(cx),Math.round(cy));ctx.rotate(angle);
           if(e.kind==='shell'){

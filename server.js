@@ -152,10 +152,10 @@ function searchPath(g,startX,startY,isGoal,blocked=-1){
   return null;
 }
 function center(i){const p=xy(i);return{x:p.x+.5,y:p.y+.5};}
-function lineOfSight(g,a,b){
+function lineOfSight(g,a,b,overWalls=false){
   let x0=Math.floor(a.x),y0=Math.floor(a.y),x1=Math.floor(b.x),y1=Math.floor(b.y);
   const dx=Math.abs(x1-x0),dy=Math.abs(y1-y0),sx=x0<x1?1:-1,sy=y0<y1?1:-1;let err=dx-dy;
-  while(!(x0===x1&&y0===y1)){const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}if(x0===x1&&y0===y1)break;const t=tileAt(g,x0,y0);if(!t||blocksPassage(t.building))return false;}
+  while(!(x0===x1&&y0===y1)){const e2=2*err;if(e2>-dy){err-=dy;x0+=sx;}if(e2<dx){err+=dx;y0+=sy;}if(x0===x1&&y0===y1)break;const t=tileAt(g,x0,y0);if(!t||blocksPassage(t.building)&&!(overWalls&&['wall','gate'].includes(t.building.type)))return false;}
   return true;
 }
 function visionFor(g,p){
@@ -192,8 +192,8 @@ function serialize(g,p,previousTiles){
     work:u.work,workResource:u.workResource,facing:u.workFacing,strike:u.strike,hit:u.hit,
     order:u.owner===p&&u.order?{kind:u.order.kind,target:u.order.tile}:null
   }));
-  const effects=g.effects.filter(e=>(e.owner===p||sees(e.x,e.y))&&(e.tx===undefined||sees(e.tx,e.ty)));
-  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,open:t.building.open,closeRequested:!!t.building.closeRequested,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
+  const effects=g.effects.filter(e=>(e.kind==='income'?e.owner===p:(e.owner===p||sees(e.x,e.y)))&&(e.tx===undefined||sees(e.tx,e.ty)));
+  const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,owner:t.building.owner,x:t.x,y:t.y,type:t.building.type,open:t.building.open,closeRequested:!!t.building.closeRequested,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
   const ownPosition=g.players[p].base,enemyPosition=g.players[1-p].base;
   const ownBase=ownPosition?g.tiles[idx(ownPosition.x,ownPosition.y)].building:null;
   const enemyBaseIndex=enemyPosition?idx(enemyPosition.x,enemyPosition.y):-1,enemySeen=vis.has(enemyBaseIndex);
@@ -281,6 +281,18 @@ function applyCommand(g,p,msg){
     if(type==='base'){player.base={x:t.x,y:t.y};player.hasPlacedBase=true;}
     for(const {u,path} of builders)workOrder(g,u,i,'build',path);
     addLog(g,`${player.name}開始建造${d.name}。`,p,i);
+  } else if(msg.action==='demolish'){
+    if(!inside(msg.x,msg.y))return;
+    const t=g.tiles[idx(msg.x,msg.y)],b=t.building;
+    if(!b||b.owner!==p||b.id!==msg.buildingId)return;
+    if(b.type==='base'&&!b.underConstruction){sendTo(g,p,{type:'notice',text:'已完工的主基地不能拆除，請保護你的據點。'});return;}
+    const refund=b.underConstruction?1:.5;
+    for(const [resource,cost] of Object.entries(BUILDING[b.type].cost||{}))player.resources[resource]+=Math.floor(cost*refund);
+    for(const q of b.queue)for(const [resource,cost] of Object.entries(UNIT[q.unit].cost))player.resources[resource]+=cost;
+    for(const u of g.units)if(u.order?.buildingId===b.id||u.order?.targetId===b.id){u.order=null;u.path=[];}
+    t.building=null;
+    if(b.type==='base'){player.base=null;player.hasPlacedBase=false;}
+    addLog(g,`${player.name}${b.underConstruction?'取消施工':'拆除'}${BUILDING[b.type].name}，已退還資源。`,p,idx(t.x,t.y));
   } else if(msg.action==='train'){
     const type=msg.unit;if(!Object.hasOwn(UNIT,type)||!inside(msg.x,msg.y))return;const t=g.tiles[idx(msg.x,msg.y)];const b=t.building;if(!b||b.owner!==p)return;
     if(b.underConstruction){sendTo(g,p,{type:'notice',text:'請等建築完工後再訓練。'});return;}
@@ -319,7 +331,7 @@ function pathToAttackRange(g,u,target,range){
   const path=searchPath(g,u.x,u.y,i=>{
     if(!passable(g,i)||(target.kind==='building'&&i===ti))return false;
     const c=center(i);
-    return Math.hypot(c.x-tx,c.y-ty)<=range&&lineOfSight(g,c,{x:tx,y:ty});
+    return Math.hypot(c.x-tx,c.y-ty)<=range&&lineOfSight(g,c,{x:tx,y:ty},u.type==='archer');
   });
   u.order.lastTargetCell=ti;
   u.order.retryPathAt=path?0:g.elapsed+.5;
@@ -350,6 +362,7 @@ function attackAndGather(g,dt){
       u.work='gather';u.workResource=t.resource;u.workFacing=Math.sign(c.x-u.x)||undefined;
       const gatherers=g.units.filter(x=>x.owner===u.owner&&x.order?.kind==='gather'&&x.order.tile===u.order.tile).length;
       const base=.78*(station?1.55:1)/(1+Math.max(0,gatherers-1)*.45),gained=Math.min(t.amount,base*dt);t.amount-=gained;g.players[u.owner].resources[t.resource]+=gained;
+      recordIncome(g,u.owner,t.resource,gained,c.x,c.y);
       continue;
     }
     if(u.order?.kind==='build'){
@@ -361,10 +374,10 @@ function attackAndGather(g,dt){
     if(u.order?.kind==='attack'){
       target=findTarget(g,u);if(!target){resumeOrStop(g,u);continue;}
       if(target.kind==='unit'&&!vision[u.owner].has(idx(Math.floor(target.x),Math.floor(target.y)))){resumeOrStop(g,u);continue;}
-    } else if(u.stance!=='force'&&u.type!=='villager'&&u.think<=0&&(!u.order||u.order.kind==='attackMove')){u.think=.35;const resume=u.order?.kind==='attackMove'?xy(u.order.tile):null,limit=u.stance==='hold'?d.range:Math.min(d.vision,4.5);const enemy=g.units.filter(x=>x.owner!==u.owner&&vision[u.owner].has(idx(Math.floor(x.x),Math.floor(x.y)))&&Math.hypot(u.x-x.x,u.y-x.y)<=limit&&(u.stance!=='hold'||lineOfSight(g,u,x))).sort((a,b)=>Math.hypot(u.x-a.x,u.y-a.y)-Math.hypot(u.x-b.x,u.y-b.y))[0];if(enemy){attackOrder(g,u,{kind:'unit',id:enemy.id});if(resume)u.order.resumeMove=resume;if(u.stance==='hold')u.order.holdTarget=true;enemy.kind='unit';target=enemy;}}
+    } else if(u.stance!=='force'&&u.type!=='villager'&&u.think<=0&&(!u.order||u.order.kind==='attackMove')){u.think=.35;const resume=u.order?.kind==='attackMove'?xy(u.order.tile):null,limit=u.stance==='hold'?d.range:Math.min(d.vision,4.5);const enemy=g.units.filter(x=>x.owner!==u.owner&&vision[u.owner].has(idx(Math.floor(x.x),Math.floor(x.y)))&&Math.hypot(u.x-x.x,u.y-x.y)<=limit&&(u.stance!=='hold'||lineOfSight(g,u,x,u.type==='archer'))).sort((a,b)=>Math.hypot(u.x-a.x,u.y-a.y)-Math.hypot(u.x-b.x,u.y-b.y))[0];if(enemy){attackOrder(g,u,{kind:'unit',id:enemy.id});if(resume)u.order.resumeMove=resume;if(u.stance==='hold')u.order.holdTarget=true;enemy.kind='unit';target=enemy;}}
     if(!target)continue;
     const tx=target.kind==='unit'?target.x:target.tile.x+.5,ty=target.kind==='unit'?target.y:target.tile.y+.5;
-    const distance=Math.hypot(tx-u.x,ty-u.y),inRange=distance<=d.range&&lineOfSight(g,u,{x:tx,y:ty});
+    const distance=Math.hypot(tx-u.x,ty-u.y),inRange=distance<=d.range&&lineOfSight(g,u,{x:tx,y:ty},u.type==='archer');
     if(u.order?.holdTarget&&distance>d.range){u.order=null;u.path=[];continue;}
     if(!inRange){pathToAttackRange(g,u,target,d.range);continue;}
     u.path=[];if(u.cooldown>0)continue;u.cooldown=d.interval;
@@ -405,13 +418,29 @@ function spawnTrainedUnit(g,t,type){
   g.units.push(u);
   return true;
 }
+function recordIncome(g,owner,resource,amount,x,y){
+  g.incomeBuckets??=new Map();
+  const key=`${owner}:${resource}:${Math.floor(x/4)}:${Math.floor(y/4)}`;
+  const bucket=g.incomeBuckets.get(key)||{owner,resource,amount:0,x,y,lastAt:g.elapsed};
+  bucket.amount+=amount;g.incomeBuckets.set(key,bucket);
+}
+function flushIncome(g){
+  g.incomeNext??=[0,0];
+  for(const [key,b] of g.incomeBuckets||[]){
+    if(b.amount>=1&&g.elapsed-b.lastAt>=3&&g.elapsed>=g.incomeNext[b.owner]){
+      const amount=Math.floor(b.amount);b.amount-=amount;b.lastAt=g.elapsed;g.incomeNext[b.owner]=g.elapsed+.8;
+      g.effects.push({kind:'income',owner:b.owner,resource:b.resource,amount,x:b.x,y:b.y,at:g.elapsed});
+    }
+    if(b.amount<1&&g.elapsed-b.lastAt>30)g.incomeBuckets.delete(key);
+  }
+}
 function tickBuildings(g,dt){
   for(const t of g.tiles){const b=t.building;if(!b)continue;
     if(b.type==='gate'&&b.closeRequested&&!g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){
       b.open=false;b.closeRequested=false;
     }
     if(b.underConstruction){const builders=g.units.filter(u=>u.owner===b.owner&&u.order?.kind==='build'&&u.order.buildingId===b.id).length;if(!builders&&b.progress>0)b.progress=Math.max(0,b.progress-dt*.2);continue;}
-    if(b.type==='farm')g.players[b.owner].resources.food+=BUILDING.farm.foodRate*dt;
+    if(b.type==='farm'){const gained=BUILDING.farm.foodRate*dt;g.players[b.owner].resources.food+=gained;recordIncome(g,b.owner,'food',gained,t.x+.5,t.y+.5);}
     if(b.queue?.length){
       const q=b.queue[0];q.remaining=Math.max(0,q.remaining-dt);
       if(q.remaining<=.000001){
@@ -428,8 +457,8 @@ function tickBuildings(g,dt){
 }
 function cleanupAndVictory(g){g.units=g.units.filter(u=>u.hp>0);const destroyed=[0,1].filter(p=>{const b=playerBase(g,p);return g.players[p].hasPlacedBase?(!b||b.hp<=0):!g.units.some(u=>u.owner===p);});if(destroyed.length){g.ended=true;g.winner=destroyed.length===2?-1:1-destroyed[0];addLog(g,g.winner<0?'雙方失去據點與建造能力，戰局平手。':`${g.players[g.winner].name}擊敗對手，獲得勝利！`);}}
 function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt;g.tick++;
-  g.effects=g.effects.filter(e=>g.elapsed-e.at<.8);
-  moveUnits(g,dt);updateVision(g);attackAndGather(g,dt);tickBuildings(g,dt);cleanupAndVictory(g);
+  g.effects=g.effects.filter(e=>g.elapsed-e.at<(e.kind==='income'?1.2:.8));
+  moveUnits(g,dt);updateVision(g);attackAndGather(g,dt);tickBuildings(g,dt);flushIncome(g);cleanupAndVictory(g);
   if(room.ai){g.aiThink+=dt;if(g.aiThink>1.25){g.aiThink=0;aiPlay(room);}}
   if(g.ended||g.tick%2===0)broadcastState(room);
 }
