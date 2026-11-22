@@ -9,7 +9,7 @@ const accounts = require('./accounts');
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8080);
 const SIZE = 40, TILE = 28, TICK = 100;
-const MID = SIZE / 2, BASE_X = [3, SIZE - 4];
+const MID = SIZE / 2, STARTS = [{x:6,y:6},{x:SIZE-7,y:SIZE-7}];
 const AI_PREPARATION_SECONDS = 75;
 const DIRS = [[1,0],[-1,0],[0,1],[0,-1]];
 const WORK_RANGE = 1.1;
@@ -25,7 +25,7 @@ const BUILDING_DPS=Object.fromEntries(Object.entries(UNIT).filter(([,unit])=>uni
   type,Math.round(unit.buildingDamage/unit.interval*10)/10
 ]));
 const BUILDING = {
-  base: {name:'主基地',hp:2400,vision:7},
+  base: {name:'主基地',hp:2400,vision:7,cost:{wood:80,stone:40},time:8,buildOn:'land'},
   barracks: {name:'兵營',hp:840,vision:2,cost:{wood:100,stone:35},time:6,buildOn:'land'},
   tower: {name:'防禦塔',hp:620,vision:7,cost:{wood:42,stone:58},time:6,buildOn:'land',range:5.8,damage:18,interval:1.1},
   wall: {name:'城牆',hp:630,vision:1,cost:{stone:20},time:2,buildOn:'land'},
@@ -83,7 +83,7 @@ function makeBuilding(owner,type,x,y,complete=true){const d=BUILDING[type];retur
 function startGame(seed, names=['指揮官 A','指揮官 B']){
   const rnd=rngFor(seed),tiles=Array(SIZE*SIZE);
   for(let y=0;y<SIZE;y++)for(let x=0;x<SIZE/2;x++){
-    const safe=(x<=5&&Math.abs(y-MID)<=3);
+    const safe=STARTS.some(s=>Math.abs(x-s.x)<=3&&Math.abs(y-s.y)<=3);
     const onIsland=insideIsland(x,y);let terrain=onIsland?'grass':'water',resource=null,amount=0;
     if(onIsland&&!safe&&y!==MID){
       const r=rnd();
@@ -94,18 +94,23 @@ function startGame(seed, names=['指揮官 A','指揮官 B']){
       else if(r<.36){terrain='berry';resource='food';}
     }
     if(resource){const [lo,hi]=RESOURCE_META[resource].amount;amount=lo+Math.floor(rnd()*(hi-lo+1));}
-    for(const xx of [x,SIZE-1-x])tiles[idx(xx,y)]={x:xx,y,terrain,resource,amount,building:null,variation:Math.floor(rnd()*4)};
+    for(const [xx,yy] of [[x,y],[SIZE-1-x,SIZE-1-y]])tiles[idx(xx,yy)]={x:xx,y:yy,terrain,resource,amount,building:null,variation:Math.floor(rnd()*4)};
+  }
+  // Keep both starting areas and a central route reachable on every seed.
+  for(let n=STARTS[0].x;n<=STARTS[1].x;n++)for(const [x,y] of [[n,n],[n+1,n],[n,n+1]]){
+    const t=tiles[idx(x,y)];t.terrain='grass';t.resource=null;t.amount=0;
+  }
+  for(const s of STARTS)for(let y=s.y-3;y<=s.y+3;y++)for(let x=s.x-3;x<=s.x+3;x++){
+    const t=tiles[idx(x,y)];t.terrain='grass';t.resource=null;t.amount=0;
   }
   // Guaranteed, mirrored approaches to wood, stone and food near each start.
   const guaranteed=[{dx:3,dy:-2,t:'forest',r:'wood'},{dx:4,dy:2,t:'stone',r:'stone'},{dx:5,dy:-1,t:'berry',r:'food'},{dx:5,dy:2,t:'forest',r:'wood'}];
-  for(const q of guaranteed){const amount=RESOURCE_META[q.r].amount[0]+Math.floor(rnd()*(RESOURCE_META[q.r].amount[1]-RESOURCE_META[q.r].amount[0]+1));for(let p=0;p<2;p++){const bx=BASE_X[p],dir=p===0?1:-1,x=bx+dir*q.dx,y=MID+q.dy;const t=tiles[idx(x,y)];t.terrain=q.t;t.resource=q.r;t.amount=amount;}}
-  const players=[0,1].map((p)=>({name:names[p]||`玩家 ${p+1}`,resources:{food:170,wood:145,stone:90,gold:35},base:{x:BASE_X[p],y:MID},connected:true}));
+  for(const q of guaranteed){const amount=RESOURCE_META[q.r].amount[0]+Math.floor(rnd()*(RESOURCE_META[q.r].amount[1]-RESOURCE_META[q.r].amount[0]+1));for(let p=0;p<2;p++){const s=STARTS[p],dir=p===0?1:-1,x=s.x+dir*q.dx,y=s.y+dir*q.dy;const t=tiles[idx(x,y)];t.terrain=q.t;t.resource=q.r;t.amount=amount;}}
+  const players=[0,1].map((p)=>({name:names[p]||`玩家 ${p+1}`,resources:{food:170,wood:225,stone:130,gold:35},start:{...STARTS[p]},base:null,hasPlacedBase:false,connected:true}));
   const units=[];
   for(let p=0;p<2;p++){
-    const bx=players[p].base.x,dir=p===0?1:-1;
-    for(const [type,dx,dy] of [['villager',dir,0],['villager',dir,-1],['villager',dir,1],['villager',-dir,0],['sword',2*dir,0],['sword',2*dir,-1]])units.push(makeUnit(null,p,type,bx+dx,MID+dy));
-    for(let y=MID-2;y<=MID+2;y++)for(let x=bx-2;x<=bx+2;x++){const t=tiles[idx(x,y)];if(t.terrain==='water'){t.terrain='grass';t.resource=null;t.amount=0;}}
-    tiles[idx(bx,MID)].building=makeBuilding(p,'base',bx,MID,true);
+    const s=STARTS[p],dir=p===0?1:-1;
+    for(const [dx,dy] of [[dir,0],[dir,-dir],[dir,dir],[-dir,0]])units.push(makeUnit(null,p,'villager',s.x+dx,s.y+dy));
   }
   return {seed,tiles,players,units,elapsed:0,tick:0,ended:false,winner:-1,memories:[Array(SIZE*SIZE).fill(null),Array(SIZE*SIZE).fill(null)],visible:[new Set(),new Set()],ai:false,aiThink:0,log:[],effects:[]};
 }
@@ -189,8 +194,9 @@ function serialize(g,p,previousTiles){
   }));
   const effects=g.effects.filter(e=>(e.owner===p||sees(e.x,e.y))&&(e.tx===undefined||sees(e.tx,e.ty)));
   const ownBuildings=[];for(const t of g.tiles)if(t.building&&t.building.owner===p)ownBuildings.push({id:t.building.id,x:t.x,y:t.y,type:t.building.type,open:t.building.open,closeRequested:!!t.building.closeRequested,hp:t.building.hp,maxHp:t.building.maxHp,underConstruction:t.building.underConstruction,progress:t.building.progress,buildTime:t.building.buildTime,queue:t.building.queue});
-  const ownBase=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;
-  const enemyBaseIndex=idx(g.players[1-p].base.x,g.players[1-p].base.y),enemySeen=vis.has(enemyBaseIndex);
+  const ownPosition=g.players[p].base,enemyPosition=g.players[1-p].base;
+  const ownBase=ownPosition?g.tiles[idx(ownPosition.x,ownPosition.y)].building:null;
+  const enemyBaseIndex=enemyPosition?idx(enemyPosition.x,enemyPosition.y):-1,enemySeen=vis.has(enemyBaseIndex);
   const logs=g.log.filter(x=>x.owner<0||x.owner===p||x.seenBy?.includes(p)).slice(0,10).map(({at,text})=>({at,text}));
   const mapUpdate=previousTiles?{tileChanges:tiles}:{tiles};
   return{type:'state',size:SIZE,room:g.roomId,slot:p,elapsed:g.elapsed,started:true,ended:g.ended,winner:g.winner,historySaved:!!g.historySaved,...mapUpdate,units,effects,buildings:ownBuildings,buildingDps:BUILDING_DPS,resources:g.players[p].resources,ownBaseHp:ownBase?.hp??0,enemyBaseVisible:enemySeen,enemyBaseHp:enemySeen?g.tiles[enemyBaseIndex].building?.hp:null,ownName:g.players[p].name,enemyName:g.players[1-p].name,logs,playerCount:2};
@@ -219,7 +225,8 @@ function workOrder(g,u,tileIndex,kind,path=workPath(g,u,tileIndex)){
   return true;
 }
 function attackOrder(g,u,target){u.order={kind:'attack',targetKind:target.kind,targetId:target.id??null,tile:target.tile??null,lastTargetCell:-1};u.path=[];u.think=0;}
-function canBuild(type,t){const d=BUILDING[type];if(!t||!d||type==='base'||t.building||t.terrain==='water')return false;if(d.buildOn==='resource')return!!t.resource&&t.resource!=='food';return!t.resource;}
+function canBuild(type,t){const d=BUILDING[type];if(!t||!d||t.building||t.terrain==='water')return false;if(d.buildOn==='resource')return!!t.resource&&t.resource!=='food';return!t.resource;}
+function playerBase(g,p){const pos=g.players[p].base;return pos?g.tiles[idx(pos.x,pos.y)].building:null;}
 function applyCommand(g,p,msg){
   if(g.ended||!msg||typeof msg!=='object')return;
   const ids=Array.isArray(msg.units)?msg.units.filter(id=>typeof id==='string').slice(0,60):[];
@@ -249,9 +256,12 @@ function applyCommand(g,p,msg){
     if(gate.closeRequested)sendTo(g,p,{type:'notice',text:'已下達關門，單位離開門口後會自動關閉。'});
     else gate.open=msg.open;
   } else if(msg.action==='build'){
-    const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type)||type==='base')return;const i=idx(msg.x,msg.y),t=g.tiles[i];
+    const type=msg.building;if(!inside(msg.x,msg.y)||!Object.hasOwn(BUILDING,type))return;const i=idx(msg.x,msg.y),t=g.tiles[i];
     if(!g.visible[p].has(i)){sendTo(g,p,{type:'notice',text:'只能在目前視野內施工。'});return;}
     const resuming=t.building?.owner===p&&t.building.underConstruction&&t.building.type===type;
+    const base=playerBase(g,p);
+    if(type!=='base'&&(!base||base.underConstruction)){sendTo(g,p,{type:'notice',text:'請先建造並完成主基地，才能建造其他建築。'});return;}
+    if(type==='base'&&!resuming&&player.hasPlacedBase){sendTo(g,p,{type:'notice',text:'每位玩家只能建造一座主基地。'});return;}
     if(!resuming){
       if(!canBuild(type,t)){sendTo(g,p,{type:'notice',text:'建築需放在空地；採集站必須蓋在木、石或金資源格。'});return;}
       if(g.units.some(u=>Math.floor(u.x)===t.x&&Math.floor(u.y)===t.y)){sendTo(g,p,{type:'notice',text:'請先讓單位離開施工格。'});return;}
@@ -268,6 +278,7 @@ function applyCommand(g,p,msg){
     if(resuming){for(const {u,path} of builders)workOrder(g,u,i,'build',path);return;}
     const d=BUILDING[type];if(!pay(player,d.cost)){sendTo(g,p,{type:'notice',text:'資源不足，無法建造。'});return;}
     t.building=makeBuilding(p,type,t.x,t.y,false);t.building.buildTime=d.time;
+    if(type==='base'){player.base={x:t.x,y:t.y};player.hasPlacedBase=true;}
     for(const {u,path} of builders)workOrder(g,u,i,'build',path);
     addLog(g,`${player.name}開始建造${d.name}。`,p,i);
   } else if(msg.action==='train'){
@@ -415,7 +426,7 @@ function tickBuildings(g,dt){
     }}}
   }
 }
-function cleanupAndVictory(g){g.units=g.units.filter(u=>u.hp>0);const destroyed=[0,1].filter(p=>{const b=g.tiles[idx(g.players[p].base.x,g.players[p].base.y)].building;return!b||b.hp<=0;});if(destroyed.length){g.ended=true;g.winner=destroyed.length===2?-1:1-destroyed[0];addLog(g,g.winner<0?'雙方主基地同時摧毀，戰局平手。':`${g.players[g.winner].name}摧毀主基地，獲得勝利！`);}}
+function cleanupAndVictory(g){g.units=g.units.filter(u=>u.hp>0);const destroyed=[0,1].filter(p=>{const b=playerBase(g,p);return g.players[p].hasPlacedBase?(!b||b.hp<=0):!g.units.some(u=>u.owner===p);});if(destroyed.length){g.ended=true;g.winner=destroyed.length===2?-1:1-destroyed[0];addLog(g,g.winner<0?'雙方失去據點與建造能力，戰局平手。':`${g.players[g.winner].name}擊敗對手，獲得勝利！`);}}
 function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt;g.tick++;
   g.effects=g.effects.filter(e=>g.elapsed-e.at<.8);
   moveUnits(g,dt);updateVision(g);attackAndGather(g,dt);tickBuildings(g,dt);cleanupAndVictory(g);
@@ -423,13 +434,27 @@ function tickGame(room,dt){const g=room.game;if(!g||g.ended)return;g.elapsed+=dt
   if(g.ended||g.tick%2===0)broadcastState(room);
 }
 function aiPlay(room){
-  const g=room.game,p=1,pl=g.players[p],enemyBase=idx(g.players[0].base.x,g.players[0].base.y);
+  const g=room.game,p=1,pl=g.players[p];
   const villagers=g.units.filter(u=>u.owner===p&&u.type==='villager'),soldiers=g.units.filter(u=>u.owner===p&&u.type!=='villager');
+  const base=playerBase(g,p);
+  if(!base){
+    const builder=villagers.find(v=>!v.order||v.order.kind==='gather');
+    if(builder&&canAIPay(pl,BUILDING.base.cost)){
+      const sites=g.tiles.filter(t=>canBuild('base',t)&&g.visible[p].has(idx(t.x,t.y)))
+        .sort((a,b)=>Math.hypot(a.x-pl.start.x,a.y-pl.start.y)-Math.hypot(b.x-pl.start.x,b.y-pl.start.y));
+      for(const t of sites){applyCommand(g,p,{action:'build',units:[builder.id],building:'base',x:t.x,y:t.y});if(playerBase(g,p))break;}
+    }
+    return;
+  }
+  if(base.underConstruction){
+    const idle=villagers.filter(v=>!v.order||v.order.kind==='gather');
+    if(idle.length)applyCommand(g,p,{action:'build',units:idle.map(v=>v.id),building:'base',x:base.x,y:base.y});
+    return;
+  }
   for(const v of villagers)if(!v.order){
     const resources=g.tiles.filter(t=>t.resource&&t.amount>3&&g.visible[p].has(idx(t.x,t.y))).sort((a,b)=>Math.abs(a.x-v.x)+Math.abs(a.y-v.y)-Math.abs(b.x-v.x)-Math.abs(b.y-v.y));
     resources.some(t=>workOrder(g,v,idx(t.x,t.y),'gather'));
   }
-  const base=g.tiles[idx(pl.base.x,pl.base.y)].building;
   const barracks=g.tiles.find(t=>t.building?.type==='barracks'&&t.building.owner===p);
   if(!barracks&&canAIPay(pl,BUILDING.barracks.cost)){
     const builder=villagers.find(v=>!v.order||v.order.kind==='gather');
@@ -448,13 +473,14 @@ function aiPlay(room){
   if(g.elapsed<AI_PREPARATION_SECONDS)return;
   const idle=soldiers.filter(u=>!u.order);
   if(!idle.length)return;
-  const enemyBuilding=g.visible[p].has(enemyBase)&&g.tiles[enemyBase].building
-    ?g.tiles[enemyBase]
-    :g.tiles.find(t=>t.building?.owner===0&&g.visible[p].has(idx(t.x,t.y)));
+  const enemyBuilding=g.tiles.find(t=>t.building?.owner===0&&g.visible[p].has(idx(t.x,t.y)));
   if(enemyBuilding){
     for(const u of idle)attackOrder(g,u,{kind:'building',id:enemyBuilding.building.id,tile:idx(enemyBuilding.x,enemyBuilding.y)});
   }else if(soldiers.length>=4){
-    for(const u of idle)moveOrder(g,u,{x:BASE_X[0]+1,y:MID},'attackMove');
+    const start=g.players[0].start;
+    const targets=g.tiles.filter(t=>passable(g,idx(t.x,t.y))&&!g.memories[p][idx(t.x,t.y)])
+      .sort((a,b)=>Math.hypot(a.x-start.x,a.y-start.y)-Math.hypot(b.x-start.x,b.y-start.y));
+    for(const u of idle){for(const t of targets)if(moveOrder(g,u,{x:t.x,y:t.y},'attackMove'))break;}
   }
 }
 function canAIPay(pl,cost){return Object.entries(cost).every(([k,v])=>pl.resources[k]>=v);}

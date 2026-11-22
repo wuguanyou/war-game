@@ -413,6 +413,7 @@
             <button class="game-button" id="gateToggle" type="button" hidden>開城門</button>
             <button class="game-button" id="recruitFromBuilding" type="button" hidden>開啟招募</button>
           </div>
+          <div class="section" id="buildActions" hidden><div class="section-title" id="buildTitle">建造</div><div class="button-grid" id="buildButtons"></div><div class="note" id="buildNote"></div></div>
           <div class="section" id="unitActions" hidden>
             <div class="section-title">部隊命令</div>
             <div class="button-grid">
@@ -426,7 +427,6 @@
             </div>
             <div class="unit-list" id="unitList"></div>
           </div>
-          <div class="section" id="buildActions" hidden><div class="section-title" id="buildTitle">建造</div><div class="button-grid" id="buildButtons"></div><div class="note" id="buildNote"></div></div>
         </aside>
         <div class="dock-tools">
           <details class="feed" id="recruitMenu">
@@ -494,7 +494,7 @@
     </div>
   </main>
 
-  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
+  <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>雙方從左上與右下出發，開局各有四名村民。選村民後按「主基地」，再點視野內空地建城；也可點空地自動派遣村民。主基地完工後才能建造其他建築，每方限一座。基地被摧毀，或建城前失去所有村民即戰敗。</li><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
   <main class="entry-page" id="accountModal" aria-labelledby="entryTitle" data-account="guest">
     <img class="entry-scene" src="assets/cover-windward-v3.jpg" alt="" fetchpriority="high">
     <div class="title-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
@@ -702,7 +702,10 @@
           $('result').classList.toggle('show',!!message.ended);
           if(entering){
             const base=message.buildings.find(b=>b.type==='base');
-            camera.x=base?base.x+.5:SIZE/2;camera.y=base?base.y+.5:SIZE/2;
+            const villagers=message.units.filter(u=>u.owner===slot&&u.type==='villager');
+            const focus=base||villagers[0];
+            camera.x=base?base.x+.5:focus?.x??SIZE/2;camera.y=base?base.y+.5:focus?.y??SIZE/2;
+            if(!base)selected=new Set(villagers.map(u=>u.id));
             camera.ready=true;resize();camera.zoom=Math.max(mapFitZoom(),.75);clampCamera();needsDraw=true;
             if(!$('game').inert)canvas.focus();
           }
@@ -710,8 +713,8 @@
             const outcome=message.winner<0?'draw':message.winner===slot?'win':'loss';
             $('result').dataset.outcome=outcome;
             setText('resultMark',outcome==='win'?'⚑':outcome==='loss'?'⚔':'◇');
-            $('resultTitle').textContent=message.winner===-1?'戰局平手':message.winner===slot?'戰區勝利':'主基地失守';
-            $('resultText').textContent=message.winner===-1?'雙方主基地同時摧毀。':message.winner===slot?'你摧毀了敵方主基地。':'你的主基地遭到摧毀。';
+            $('resultTitle').textContent=message.winner===-1?'戰局平手':message.winner===slot?'戰區勝利':'戰區失守';
+            $('resultText').textContent=message.winner===-1?'雙方失去據點與建造能力。':message.winner===slot?'敵方基地已摧毀，或建城前已失去所有村民。':'你的基地已摧毀，或建城前已失去所有村民。';
             if(finished){guide.classList.add('hidden');$('resultAgain').focus()}
             setText('resultSave',currentAccount?(message.historySaved?'戰績已保存':'正在保存戰績…'):'訪客對局。登入帳號後可保存之後的戰績。');
           }
@@ -1108,15 +1111,17 @@
     function buildMatchesTile(type,tile){
       return tile.building?tile.building.type===type:(type==='gather'?!!tile.resource:!tile.resource);
     }
+    function ownBase(){return state?.buildings.find(b=>b.type==='base');}
+    function buildUnlocked(type){const base=ownBase();return type==='base'?!base:!!base&&!base.underConstruction;}
     function renderUI(){
       if(!state)return;
       for(const resource of Object.keys(RES))setText(resource,Math.floor(state.resources[resource]));
       $('timer').textContent=formatTime(state.elapsed);
       $('roomCodeTop').textContent=room||state.room||'—';
-      $('ownBaseHp').textContent=Math.ceil(state.ownBaseHp||0);
+      $('ownBaseHp').textContent=ownBase()?Math.ceil(state.ownBaseHp||0):'尚未建造';
       $('enemyBaseHp').textContent=state.enemyBaseVisible?Math.ceil(state.enemyBaseHp||0):'未偵察';
       $('playerLabel').textContent=`${state.ownName}　VS　${state.enemyName}${roomAi?'（AI）':''}`;
-      $('serverHint').textContent=state.ended?'對局已結束':ws?.readyState===1?'對局同步中':'正在重新連線';
+      $('serverHint').textContent=state.ended?'對局已結束':ws?.readyState!==1?'正在重新連線':!ownBase()?'先選主基地，再點空地建城':ownBase().underConstruction?'基地施工中 · 完工後解鎖其他建築':'對局同步中';
 
       const units=ownSelected(),hasUnits=units.length>0;
       const hasVillager=units.some(u=>u.type==='villager');
@@ -1134,7 +1139,7 @@
       const staffed=directBuild&&building?.underConstruction&&state.units.some(u=>u.owner===slot&&u.order?.kind==='build'&&u.order.target===tile.y*SIZE+tile.x);
       $('buildActions').hidden=(!hasVillager&&!directBuild)||state.ended;
       setText('buildTitle',directBuild&&building?'施工':'建造');
-      setText('buildNote',directBuild?(staffed?'村民正在前往或施工':'自動派遣可到場的村民'):'');
+      setText('buildNote',!ownBase()?'選擇主基地，再點視野內空地；可先移動村民尋找位置。':ownBase().underConstruction?'主基地完工後解鎖其他建築。':directBuild?(staffed?'村民正在前往或施工':'自動派遣可到場的村民'):'');
       $('contextIcon').classList.toggle('unit-icon',hasUnits);
       if(hasUnits)$('contextIcon').style.setProperty('--unit-row',`${UNIT_ROWS[units[0].type]*25}%`);
       for(const button of stanceButtons){
@@ -1148,13 +1153,15 @@
       $('orderMode').classList.toggle('active',orderMode);
       const targeting=pendingBuild?`點地圖放置${B[pendingBuild].name}`:attackMode?'點地圖指定攻擊目標':orderMode?'點地圖移動、採集或攻擊':'';
       const hint=$('commandHint');
-      hint.hidden=!targeting;
-      setText('commandHint',targeting);
+      const openingHint=!ownBase()?'先按「主基地」，再點空地建城；也可先移動村民探索。':ownBase().underConstruction?'主基地施工中 · 完工後解鎖其他建築':'';
+      hint.hidden=!targeting&&!openingHint;
+      setText('commandHint',targeting||openingHint);
       if(targeting)canvas.setAttribute('data-targeting','');
       else canvas.removeAttribute('data-targeting');
       for(const button of $('buildButtons').children){
         const type=button.dataset.building,active=type===pendingBuild;
-        button.hidden=!!directBuild&&!buildMatchesTile(type,tile);
+        const resuming=directBuild&&building?.underConstruction&&building.type===type;
+        button.hidden=(!buildUnlocked(type)&&!resuming)||(!!directBuild&&!buildMatchesTile(type,tile));
         button.disabled=!!staffed;
         const label=button.querySelector('[data-build-label]');
         const title=directBuild&&building?`繼續建造${B[type].name}`:B[type].name;
@@ -1218,7 +1225,7 @@
     }
     $('gateToggle').onclick=()=>{if(selectedTile)toggleGate(tileState(selectedTile.x,selectedTile.y));};
     function setupBuildActions(){
-      const builds=[['barracks','木100 石35',6],['tower','木42 石58',6],['farm','木52',4],['gather','木45 石18',4],['wall','石20',2],['gate','木25 石25',3]];
+      const builds=[['base','木80 石40',8],['barracks','木100 石35',6],['tower','木42 石58',6],['farm','木52',4],['gather','木45 石18',4],['wall','石20',2],['gate','木25 石25',3]];
       for(const [type,cost,time] of builds){
         const button=document.createElement('button');
         button.className='game-button';
@@ -1227,6 +1234,7 @@
         button.onclick=()=>{
           if(!state||state.ended)return;
           const tile=selectedTile&&tileState(selectedTile.x,selectedTile.y);
+          if(!buildUnlocked(type)&&!(tile?.building?.underConstruction&&tile.building.type===type))return;
           if(!selected.size&&canBuildFromTile(tile)&&buildMatchesTile(type,tile)){
             command('build',{building:type,x:tile.x,y:tile.y,auto:true});
             return;
@@ -1267,7 +1275,7 @@
     $('recruitBuild').onclick=()=>{
       if(!state||state.ended)return;
       recruitMenu.open=false;
-      pendingBuild='barracks';autoBarracks=true;attackMode=false;orderMode=false;
+      pendingBuild=ownBase()?'barracks':'base';autoBarracks=true;attackMode=false;orderMode=false;
       renderUI();canvas.focus();
     };
     function renderRecruitment(selectedBuilding){
@@ -1296,6 +1304,8 @@
       const canTrain=building&&TRAINING[building.type];
       $('recruitLocate').disabled=!building;
       $('recruitBuild').hidden=barracks.length>0||state.ended;
+      $('recruitBuild').disabled=!!ownBase()?.underConstruction;
+      $('recruitBuild').textContent=ownBase()?'建造兵營':'選址建造主基地';
       const holder=$('trainButtons'),key=building?.id??'';
       if(holder.dataset.target!==key){
         holder.dataset.target=key;
@@ -1311,7 +1321,7 @@
       }
       const queue=building?.queue??[];
       for(const button of holder.children)button.disabled=state.ended||!!building?.underConstruction||queue.length>=5;
-      const help=!barracks.length?'要招募戰鬥部隊，先按「建造兵營」，再點視野內的空地。':'';
+      const help=!ownBase()?'開局只有村民：先選址建造主基地，完工後才能建造其他建築。':ownBase().underConstruction?'主基地施工中，完工後即可建造兵營。':!barracks.length?'要招募戰鬥部隊，先按「建造兵營」，再點視野內的空地。':'';
       const status=building?.underConstruction
         ?`施工中 · ${Math.floor(building.progress/building.buildTime*100)}%`
         :queue.length?`排隊中 · ${queue.map(q=>`${U[q.unit].name} ${q.remaining>0?`${Math.ceil(q.remaining)} 秒`:'等待出口淨空'}`).join('、')}`:'招募完成後，單位會出現在這座建築旁。';
