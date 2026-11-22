@@ -1,6 +1,16 @@
 CREATE SCHEMA IF NOT EXISTS windward;
 REVOKE ALL ON SCHEMA windward FROM PUBLIC;
 
+CREATE TABLE IF NOT EXISTS windward.game_friendships (
+  account_low VARCHAR(36) NOT NULL,
+  account_high VARCHAR(36) NOT NULL,
+  requester_id VARCHAR(36) NOT NULL,
+  status VARCHAR(10) NOT NULL,
+  created_at BIGINT NOT NULL,
+  PRIMARY KEY (account_low,account_high)
+);
+CREATE INDEX IF NOT EXISTS friend_high ON windward.game_friendships (account_high);
+
 CREATE TABLE IF NOT EXISTS windward.game_profiles (
   account_id VARCHAR(36) PRIMARY KEY,
   avatar TEXT NOT NULL,

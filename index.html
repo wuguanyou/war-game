@@ -376,6 +376,9 @@
     }
     @media(max-height:550px) and (min-width:761px){.title-logo{top:0;width:340px}.logo-crest{width:45px;height:45px}.title-logo h1{font-size:50px}.logo-overline{margin:7px 0}.title-start{bottom:0}.account-drawer{padding-top:20px}.drawer-crest{display:none}}
     @media(prefers-reduced-motion:reduce){.title-logo,.title-start,.account-drawer,.title-particles i{animation:none!important}.fantasy-button,.lobby-modes .menu-choice{transition:none!important}}
+    .friends-sheet{width:min(740px,100%)}.friend-search{margin:24px 0 16px}.friend-search label{display:block;color:#bccdc6;font-size:12px;margin-bottom:10px}.friend-search>div{display:flex;gap:12px}.friend-search input{min-width:0;flex:1;padding:10px;border:1px solid #68878b;background:#092639;color:#eceddc;border-radius:5px}.friend-tabs{display:flex;gap:10px;margin:22px 0 15px;border-bottom:1px solid #b8b38355}.friend-tabs button{border:0;border-bottom:2px solid transparent;background:none;color:#9ab9c1;padding:10px 15px}.friend-tabs [aria-selected=true]{color:#ffe1a4;border-color:#edca85}.friend-list{display:grid;gap:10px}.friend-row{display:flex;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid #8ba79f30}.friend-person{flex:1;min-width:0}.friend-person strong,.friend-person small{display:block;overflow-wrap:anywhere}.friend-person strong{font-size:15px;color:#f0dbb0}.friend-person small{font-size:11px;color:#98b8bf;margin-top:5px}.friend-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.friend-actions button{font-size:11px;background:#244958;color:#e8d5aa;border:1px solid #8da49c;padding:7px 10px;border-radius:5px}.friend-empty{padding:25px 0;color:#a9c0c5;font-size:13px}#friendsStatus{font-size:12px;color:#e6d0a1;line-height:1.5}.friend-invite{position:fixed;z-index:45;top:80px;right:18px;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 36px);padding:16px;background:#173d50;border:1px solid #d1ba81;border-radius:18px 4px;color:#f6e3b9;box-shadow:0 10px 40px #0007}.friend-invite small{display:block;font-size:11px;margin-top:5px;color:#acc6c9}.friend-invite button{background:#315b65;border:1px solid #a9b697;color:#ffe0a0}.friend-invite[hidden]{display:none}
+    .match-found{position:fixed;inset:0;z-index:25;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at center,#244b5cf7,#071b2cfd);color:#f6dfaa;text-align:center}.match-found>p{font-size:12px;letter-spacing:.2em;color:#b6ceca}.match-found h2{font:32px "PMingLiU",serif;letter-spacing:.15em}.match-commanders{display:flex;gap:65px;align-items:center;margin:30px 0}.match-commanders>div{width:200px;display:flex;flex-direction:column;align-items:center;gap:17px}.match-commanders .commander-avatar{width:140px;height:140px;font-size:65px}.match-commanders strong{font-size:24px;overflow-wrap:anywhere}.match-commanders small{color:#9dbbc0;font-size:11px}.match-commanders>span{font:italic 38px Georgia,serif;color:#d7bc7f}.opponent-badge{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:11px;color:#e5d4aa}.opponent-badge[hidden]{display:none}.opponent-badge .compact{width:28px;height:28px;font-size:18px}.room-members .waiting-member{display:flex;align-items:center;gap:12px}.waiting-member small{display:block;font-size:10px;color:#a7c6c9;margin-top:4px}
+    @media(max-width:620px){.friend-tabs{gap:0}.friend-tabs button{font-size:12px;padding:10px}.friend-row{flex-wrap:wrap}.friend-actions{width:100%}.friend-invite{top:105px;right:9px;max-width:calc(100vw - 18px);gap:8px;padding:12px;font-size:12px}.match-commanders{gap:20px}.match-commanders>div{width:125px}.match-commanders .commander-avatar{width:85px;height:85px;font-size:40px}.match-commanders strong{font-size:18px}.match-commanders>span{font-size:25px}.match-found h2{font-size:26px}}
   </style>
 </head>
 <body>
@@ -398,6 +401,7 @@
             <button class="control" id="showGuide">操作指南</button>
             <button class="control" id="profileInGame" type="button">個人資訊／設定</button>
             <button class="control" id="showHistoryGame">歷史戰績</button>
+            <button class="control" id="friendsInGame" type="button">好友</button>
             <button class="control" id="copyRoom">分享房間</button>
             <button class="control" id="leaveRoom">返回大廳</button>
           </div>
@@ -408,6 +412,7 @@
       <div class="canvas-wrap"><canvas id="map" tabindex="-1" aria-label="像素戰區地圖"></canvas></div>
       <div class="match">
         <span id="playerLabel">翡翠群島</span>
+        <div class="opponent-badge" id="opponentBadge" hidden><div class="commander-avatar compact" id="opponentAvatar"></div><span id="opponentName"></span></div>
         <div class="base-status"><span>主堡 <b id="ownBaseHp">—</b></span><span>敵堡 <b id="enemyBaseHp">未偵察</b></span></div>
       </div>
       <div class="map-tools" aria-label="地圖縮放">
@@ -475,6 +480,7 @@
           <button class="control" id="lobbyGuide" type="button">操作指南</button>
           <button class="control" id="showHistory" type="button">歷史戰績</button>
           <button class="control" id="openProfile" type="button">個人資訊／設定</button>
+          <button class="control" id="openFriends" type="button">好友</button>
           <button class="control" id="accountButton" type="button">登入／註冊</button>
           <button class="control" id="logoutButton" type="button" hidden>登出</button>
         </div>
@@ -575,6 +581,16 @@
       <footer class="profile-foot"><p id="profileStatus" role="status"></p><button class="fantasy-button" id="saveProfile" type="button">儲存變更</button></footer>
     </section>
   </div>
+  <div class="modal profile-modal hidden" id="friendsModal" role="dialog" aria-modal="true" aria-labelledby="friendsTitle"><section class="profile-sheet friends-sheet">
+    <header class="profile-head"><div><small>ALLIES OF THE ISLES</small><h2 id="friendsTitle">好友與盟友</h2></div><button id="closeFriends" type="button" aria-label="關閉好友">×</button></header>
+    <form id="friendSearchForm" class="friend-search"><label for="friendSearchInput">以完整登入帳號尋找玩家</label><div><input id="friendSearchInput" placeholder="例如 island_captain" minlength="3" maxlength="24" pattern="[A-Za-z0-9_]{3,24}" required autocomplete="off"><button class="fantasy-button" id="friendSearchButton" type="submit">搜尋</button></div></form>
+    <div id="friendSearchResult" class="friend-list"></div><p id="friendsStatus" role="status"></p>
+    <div class="friend-tabs" role="tablist" aria-label="好友分類"><button id="friendsListTab" role="tab" aria-selected="true" aria-controls="friendRows">好友名單</button><button id="friendsIncomingTab" role="tab" aria-selected="false" aria-controls="friendRows">收到申請</button><button id="friendsOutgoingTab" role="tab" aria-selected="false" aria-controls="friendRows">已送出</button></div>
+    <div id="friendRows" class="friend-list" role="tabpanel" aria-labelledby="friendsListTab"></div>
+    <footer class="profile-foot"><p>只有雙方同意後才成為好友。在線狀態於重新整理時更新。</p><button id="refreshFriends" class="entry-link" type="button">重新整理</button></footer>
+  </section></div>
+  <section id="friendInviteBanner" class="friend-invite" aria-label="好友對戰邀請" hidden><div class="commander-avatar compact" id="inviteAvatar"></div><div><strong id="inviteName"></strong><small>邀請你進行好友對戰</small></div><button id="acceptBattleInvite" type="button">接受</button><button id="dismissBattleInvite" type="button" aria-label="略過對戰邀請">×</button></section>
+  <div class="match-found hidden" id="matchFound" role="dialog" aria-modal="true" aria-label="對戰雙方資訊" tabindex="-1"><p>風起之時 · 群島爭鋒</p><h2>對手已就位</h2><div class="match-commanders"><div><div class="commander-avatar" id="matchAvatar0"></div><strong id="matchName0"></strong><small id="matchType0"></small></div><span>VS</span><div><div class="commander-avatar" id="matchAvatar1"></div><strong id="matchName1"></strong><small id="matchType1"></small></div></div><p id="matchCountdown" role="status"></p></div>
   <div class="result" id="result" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
     <div class="result-card">
       <div class="result-sparks" id="resultSparks" aria-hidden="true"></div>
@@ -666,6 +682,7 @@
       catch{setLobbyStatus('無法建立連線，正在自動重試。');scheduleReconnect();return}
       setConnection(false,'連線中');
       ws.onopen=()=>{
+        if(currentAccount)loadFriends(true);
         reconnectDelay=1000;
         setConnection(true,'已連線');
         const savedRoom=sessionStorage.getItem('frontierRoom');
@@ -698,20 +715,24 @@
           sessionStorage.setItem('frontierRoom',room);
           sessionStorage.setItem('frontierToken',message.token);
           $('roomCodeTop').textContent=room;
+          if(pendingFriendInviteId){send('friendInvite',{accountId:pendingFriendInviteId});pendingFriendInviteId='';}
           if(!roomAi&&!state){
             $('waitingHost').textContent=message.name;
             $('waitingGuest').textContent='等待好友加入';
             showWaitingRoom($('waitingRoom').hidden);
           }
         }else if(message.type==='lobby'){
+          renderWaitingMembers(message.members);
           setLobbyStatus(message.ai?'正在載入 AI 練習…':message.count<2?'把房間碼分享給好友即可開始。':'雙方已加入，正在載入戰區…');
           if(!message.ai&&!state){
-            $('waitingHost').textContent=message.names?.[0]||'等待房主';
-            $('waitingGuest').textContent=message.names?.[1]||'等待好友加入';
+            if(!message.members){$('waitingHost').textContent=message.names?.[0]||'等待房主';$('waitingGuest').textContent=message.names?.[1]||'等待好友加入';}
             $('waitingTitle').textContent=message.count<2?'等待對手':'正在進入戰區';
             showWaitingRoom();
           }
-        }else if(message.type==='state'){
+        }else if(message.type==='match'){showMatch(message);}
+        else if(message.type==='friendInvite'){showBattleInvite(message);}
+        else if(message.type==='friendsChanged'){setText('openFriends','好友 •');if(!$('friendsModal').classList.contains('hidden'))loadFriends(true);else showToast('好友名單有更新，可開啟好友查看。');}
+        else if(message.type==='state'){
           const entering=!state,finished=message.ended&&!state?.ended;
           const size=message.size??Math.sqrt(message.tiles?.length??0);
           if(Number.isInteger(size)&&size>0)SIZE=size;
@@ -733,7 +754,7 @@
           selected=new Set([...selected].filter(id=>message.units.some(u=>u.id===id&&u.owner===slot)));
           $('lobbyPage').hidden=true;
           $('game').hidden=false;
-          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden')||!$('profileModal').classList.contains('hidden');
+          $('game').inert=!!message.ended||!guide.classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden')||!$('profileModal').classList.contains('hidden')||!$('friendsModal').classList.contains('hidden')||!$('matchFound').classList.contains('hidden');
           $('result').classList.toggle('show',!!message.ended);
           if(entering){
             const base=message.buildings.find(b=>b.type==='base');
@@ -762,6 +783,7 @@
         }else if(message.type==='notice')showToast(message.text);
         else if(message.type==='status'){$('serverHint').textContent=message.text;showToast(message.text)}
         else if(message.type==='error'){
+          pendingFriendInviteId='';
           if(resumeAttempt){
             resumeAttempt=false;
             clearSavedRoom();
@@ -780,7 +802,7 @@
     function startJoin(kind,button){
       if(lobbyBusy||ws?.readyState!==1)return;
       const name=$('nameInput').value.trim()||'指揮官';
-      const data={name,tileDeltas:true};
+      const data={name,tileDeltas:true,avatar:currentAccount?.avatar||readLocal('windwardGuestProfile',{}).avatar||'compass:mint'};
       if(kind==='join'){
         data.room=$('roomInput').value.trim().toUpperCase();
         if(!/^[A-F0-9]{6}$/.test(data.room)){
@@ -1794,9 +1816,114 @@
       }catch(error){setText('profileStatus',error.message||'無法儲存，請重試。');}
       finally{profileBusy=false;$('saveProfile').disabled=false;$('closeProfile').disabled=false;}
     };
+    let friendsData={friends:[],incoming:[],outgoing:[]},friendsTab='List',friendsReturnFocus=null,friendsRequest=0,friendsBusy=false,friendsPoll=null,pendingFriendInviteId='',battleInvite=null,inviteTimer=null,matchTimer=null;
+    function friendRow(user,actions=[]){
+      const row=document.createElement('div');row.className='friend-row';
+      const avatar=document.createElement('div');avatar.className='commander-avatar compact';renderAvatar(avatar,user.avatar);
+      const person=document.createElement('div');person.className='friend-person';
+      const name=document.createElement('strong');name.textContent=user.name;
+      const account=document.createElement('small');account.textContent='@'+user.username+(user.online===undefined?'':user.online?' · 在線':' · 離線');person.append(name,account);
+      const tools=document.createElement('div');tools.className='friend-actions';
+      for(const action of actions){const b=document.createElement('button');b.type='button';b.textContent=action.label;b.disabled=!!action.disabled;b.onclick=()=>action.run(b);tools.appendChild(b);}
+      row.append(avatar,person,tools);return row;
+    }
+    function renderFriends(){
+      setText('openFriends',friendsData.incoming.length?`好友 · ${friendsData.incoming.length}`:'好友');
+      for(const tab of ['List','Incoming','Outgoing']){
+        const button=$(`friends${tab}Tab`),key=tab==='List'?'friends':tab.toLowerCase();
+        button.setAttribute('aria-selected',String(tab===friendsTab));button.tabIndex=tab===friendsTab?0:-1;
+        button.textContent=({List:'好友名單',Incoming:'收到申請',Outgoing:'已送出'})[tab]+` (${friendsData[key].length})`;
+      }
+      $('friendRows').setAttribute('aria-labelledby',`friends${friendsTab}Tab`);$('friendRows').replaceChildren();
+      const rows=friendsData[friendsTab==='List'?'friends':friendsTab.toLowerCase()];
+      for(const user of rows){
+        const actions=friendsTab==='Incoming'?[{label:'接受',run:()=>friendAction('accept',user)},{label:'拒絕',run:()=>friendAction('reject',user)}]:friendsTab==='Outgoing'?[{label:'取消申請',run:()=>friendAction('cancel',user)}]:[
+          {label:'邀請對戰',disabled:!user.online||!!state||ws?.readyState!==1,run:()=>inviteFriend(user)},
+          {label:'移除好友',run:button=>{if(button.dataset.confirm==='yes')friendAction('remove',user);else{button.dataset.confirm='yes';button.textContent='確認移除？';setTimeout(()=>{button.dataset.confirm='';button.textContent='移除好友';},4000);}}}
+        ];
+        $('friendRows').appendChild(friendRow(user,actions));
+      }
+      if(!rows.length){const empty=document.createElement('p');empty.className='friend-empty';empty.textContent=friendsTab==='List'?'尚無好友，搜尋完整帳號即可送出申請。':friendsTab==='Incoming'?'目前沒有收到好友申請。':'目前沒有等待回覆的申請。';$('friendRows').appendChild(empty);}
+    }
+    async function loadFriends(silent=false){
+      if(friendsBusy||$('friendSearchButton').disabled)return;const request=++friendsRequest;
+      if(!silent)setText('friendsStatus','正在讀取好友名單…');
+      try{const data=await accountApi('/api/friends');if(request!==friendsRequest)return;friendsData=data;renderFriends();if(!silent)setText('friendsStatus','已更新好友名單。');}
+      catch(error){if(request===friendsRequest)setText('friendsStatus',error.message);}
+    }
+    function openFriends(){
+      if(!currentAccount){showAccount();showToast('請先登入使用好友功能。');return;}
+      friendsReturnFocus=document.activeElement;gameMenu.open=false;$('friendSearchResult').replaceChildren();$('friendSearchInput').value='';
+      $('friendsModal').classList.remove('hidden');friendsTab='List';renderFriends();lockForAccountModal();$('friendSearchInput').focus();
+      loadFriends();clearInterval(friendsPoll);friendsPoll=setInterval(()=>loadFriends(true),15000);
+    }
+    function closeFriends(){if(friendsBusy)return;friendsRequest++;clearInterval(friendsPoll);$('friendsModal').classList.add('hidden');lockForAccountModal();friendsReturnFocus?.focus();}
+    $('openFriends').onclick=openFriends;$('friendsInGame').onclick=openFriends;$('closeFriends').onclick=closeFriends;
+    $('refreshFriends').onclick=()=>loadFriends();$('friendsModal').onclick=event=>{if(event.target===$('friendsModal'))closeFriends();};
+    for(const [i,tab] of ['List','Incoming','Outgoing'].entries()){
+      const button=$(`friends${tab}Tab`);button.onclick=()=>{friendsTab=tab;renderFriends();};
+      button.onkeydown=event=>{if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;event.preventDefault();const tabs=['List','Incoming','Outgoing'],next=event.key==='Home'?0:event.key==='End'?2:(i+(event.key==='ArrowRight'?1:2))%3;friendsTab=tabs[next];renderFriends();$(`friends${friendsTab}Tab`).focus();};
+    }
+    async function friendAction(action,user){
+      if(friendsBusy)return;friendsBusy=true;friendsRequest++;$('closeFriends').disabled=true;
+      for(const b of $('friendsModal').querySelectorAll('button'))b.disabled=true;
+      try{friendsData=await accountApi('/api/friends',{action,username:user.username,accountId:user.id});$('friendSearchResult').replaceChildren();setText('friendsStatus',({request:'已送出好友申請。',accept:'已成為好友。',reject:'已拒絕申請。',cancel:'已取消申請。',remove:'已移除好友。'})[action]);}
+      catch(error){setText('friendsStatus',error.message);}
+      finally{friendsBusy=false;for(const b of $('friendsModal').querySelectorAll('button'))b.disabled=false;renderFriends();}
+    }
+    $('friendSearchForm').onsubmit=async event=>{
+      event.preventDefault();if(friendsBusy)return;
+      const request=++friendsRequest;$('friendSearchButton').disabled=true;$('friendSearchResult').replaceChildren();setText('friendsStatus','搜尋中…');
+      try{
+        const data=await accountApi('/api/friends/search?username='+encodeURIComponent($('friendSearchInput').value.trim()));if(request!==friendsRequest)return;
+        if(!data.user){setText('friendsStatus','找不到這個帳號，請確認輸入完整登入帳號；無法搜尋自己。');return;}
+        const relation=friendsData.friends.some(u=>u.id===data.user.id)?'已是好友':friendsData.incoming.some(u=>u.id===data.user.id)?'對方已申請，請查看收到申請':friendsData.outgoing.some(u=>u.id===data.user.id)?'已送出申請':'';
+        $('friendSearchResult').appendChild(friendRow(data.user,[{label:relation||'加為好友',disabled:!!relation,run:()=>friendAction('request',data.user)}]));setText('friendsStatus','找到這位指揮官。');
+      }catch(error){if(request===friendsRequest)setText('friendsStatus',error.message);}finally{$('friendSearchButton').disabled=false;}
+    };
+    function inviteFriend(user){
+      if(state||ws?.readyState!==1){showToast('請先返回大廳再邀請好友。');return;}
+      closeFriends();
+      if(room){send('friendInvite',{accountId:user.id});return;}
+      pendingFriendInviteId=user.id;startJoin('create',$('createRoom'));
+    }
+    function showBattleInvite(message){
+      battleInvite={...message,until:performance.now()+Math.min(60000,message.expiresInMs||60000)};
+      renderAvatar($('inviteAvatar'),message.from.avatar);setText('inviteName',message.from.name);$('friendInviteBanner').hidden=false;
+      clearTimeout(inviteTimer);inviteTimer=setTimeout(()=>{$('friendInviteBanner').hidden=true;battleInvite=null;},60000);
+    }
+    $('dismissBattleInvite').onclick=()=>{$('friendInviteBanner').hidden=true;battleInvite=null;};
+    $('acceptBattleInvite').onclick=()=>{
+      if(!battleInvite||performance.now()>battleInvite.until){showToast('邀請已過期。');return;}
+      if(room||state){showToast('請先離開目前房間，再接受邀請。');return;}
+      if(friendsBusy||profileBusy){showToast('正在儲存操作，請稍後接受邀請。');return;}
+      if(!$('profileModal').classList.contains('hidden'))closeProfile();
+      if(!$('historyModal').classList.contains('hidden'))closeHistory();
+      if(!$('accountModal').classList.contains('hidden'))closeAccount();
+      closeFriends();$('roomInput').value=battleInvite.room;$('friendInviteBanner').hidden=true;battleInvite=null;startJoin('join',$('joinRoom'));
+    };
+    function renderWaitingMembers(members){
+      if(!members)return;
+      for(let p=0;p<2;p++){
+        const node=$(p===0?'waitingHost':'waitingGuest');node.replaceChildren();const member=members[p];
+        if(!member){node.textContent=p===0?'等待房主':'等待好友加入';continue;}
+        node.classList.add('waiting-member');const avatar=document.createElement('div');avatar.className='commander-avatar compact';renderAvatar(avatar,member.avatar);
+        const label=document.createElement('div');label.textContent=member.name;const type=document.createElement('small');type.textContent=member.ai?'AI 守軍':member.guest?'訪客指揮官':'指揮官';label.appendChild(type);node.append(avatar,label);
+      }
+    }
+    function showMatch(message){
+      const members=message.members||[];
+      for(let p=0;p<2;p++){const user=members[p]||{name:'指揮官',avatar:'compass:mint'};renderAvatar($('matchAvatar'+p),user.avatar);setText('matchName'+p,user.name);setText('matchType'+p,user.ai?'AI 守軍':p===slot?'我方指揮官':'對手');}
+      const enemy=members[1-slot];if(enemy){renderAvatar($('opponentAvatar'),enemy.avatar);setText('opponentName',enemy.name);$('opponentBadge').hidden=false;}
+      clearInterval(matchTimer);const until=performance.now()+Math.min(3500,Math.max(0,message.startsInMs||0));
+      if(message.startsInMs<=0)return;
+      $('matchFound').classList.remove('hidden');lockForAccountModal();$('matchFound').focus();
+      const tick=()=>{const left=Math.max(0,Math.ceil((until-performance.now())/1000));setText('matchCountdown',left?`${left} 秒後展開戰局`:'出征！');if(!left){clearInterval(matchTimer);$('matchFound').classList.add('hidden');lockForAccountModal();if(!$('game').inert)canvas.focus();}};
+      tick();matchTimer=setInterval(tick,150);
+    }
     function lockForAccountModal(){
-      const profileOpen=!$('profileModal').classList.contains('hidden');
-      const modalOpen=profileOpen||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
+      const profileOpen=!$('profileModal').classList.contains('hidden')||!$('friendsModal').classList.contains('hidden');
+      const modalOpen=profileOpen||!$('matchFound').classList.contains('hidden')||!$('accountModal').classList.contains('hidden')||!$('historyModal').classList.contains('hidden');
       $('lobbyPage').inert=modalOpen||!guide.classList.contains('hidden');
       $('game').inert=modalOpen||!state||!!state.ended||!guide.classList.contains('hidden');
       $('result').inert=modalOpen;
@@ -1985,11 +2112,11 @@
     }
     document.addEventListener('keydown',event=>{
       if(!guide.classList.contains('hidden'))return;
-      const modal=!$('profileModal').classList.contains('hidden')?$('profileModal'):!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
+      const modal=!$('friendsModal').classList.contains('hidden')?$('friendsModal'):!$('profileModal').classList.contains('hidden')?$('profileModal'):!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
       if(!modal)return;
       if(event.key==='Escape'){
         event.preventDefault();event.stopImmediatePropagation();
-        if(modal.id==='profileModal')closeProfile();else if(modal.id==='entryDrawer')closeAccount();else closeHistory();
+        if(modal.id==='friendsModal')closeFriends();else if(modal.id==='profileModal')closeProfile();else if(modal.id==='entryDrawer')closeAccount();else closeHistory();
       }
       if(event.key==='Tab'){
         const focusable=[...modal.querySelectorAll('button,input,textarea,select')].filter(node=>!node.disabled&&node.getClientRects().length);

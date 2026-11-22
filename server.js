@@ -533,8 +533,15 @@ function broadcastState(room){
 function broadcastLobby(room){
   const count=room.ai?2:room.players.filter(Boolean).length;
   const names=room.names.map((name,slot)=>room.players[slot]||(room.ai&&slot===1)?name:null);
-  for(const ws of room.players)if(ws)wsSend(ws,{type:'lobby',room:room.id,count,needed:2,ai:room.ai,names});
+  for(const ws of room.players)if(ws)wsSend(ws,{type:'lobby',room:room.id,count,needed:2,ai:room.ai,names,members:roomMembers(room)});
 }
+function publicAvatar(value){return typeof value==='string'&&value.length<=60000&&(/^(compass|sword|shield|crown|leaf|anchor):(mint|blue|rose|gold|violet)$/.test(value)||/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(value))?value:'compass:mint';}
+function roomMembers(room){return [0,1].map(p=>{
+  if(room.ai&&p===1)return{name:'像素守軍',avatar:'shield:rose',guest:false,ai:true};
+  if(!room.profiles?.[p])return null;
+  const account=room.players[p]?.account;
+  return {name:room.names[p],avatar:publicAvatar(account?.avatar||room.profiles[p].avatar),guest:!room.accountIds?.[p]};
+});}
 function randCode(){return crypto.randomBytes(3).toString('hex').toUpperCase();}
 function safeName(s){return String(s||'玩家').replace(/[<>\u0000-\u001f]/g,'').slice(0,16)||'玩家';}
 function joinRoom(ws,msg){
@@ -560,18 +567,33 @@ function joinRoom(ws,msg){
   ws.room=room;ws.slot=slot;
   room.accountIds??=[null,null];
   if(!room.game)room.accountIds[slot]=ws.account?.id??null;
+  room.profiles??=[null,null];room.profiles[slot]={avatar:publicAvatar(ws.account?.avatar||msg.avatar||room.profiles[slot]?.avatar)};
   ws.tileDeltas=msg.tileDeltas===true;
   if(!room.tokens[slot])room.tokens[slot]=crypto.randomBytes(12).toString('hex');
   wsSend(ws,{type:'joined',room:room.id,slot,token:room.tokens[slot],ai:room.ai,name:room.names[slot]});
   broadcastLobby(room);
   if(room.ai||room.players[0]&&room.players[1]){
-    if(!room.game){room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.matchId=crypto.randomUUID();room.game.ai=room.ai;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成，主基地耐久歸零為唯一勝利條件。');}
+    if(!room.game){room.readyAt=Date.now()+3500;room.game=startGame(crypto.randomBytes(4).readUInt32LE(),[room.names[0],room.names[1]]);room.game.matchId=crypto.randomUUID();room.game.ai=room.ai;room.game.roomId=room.id;room.game.clients=room.players;addLog(room.game,'戰區同步完成：先選址建造主基地，基地失守或建城前失去所有村民即戰敗。');}
+    broadcast(room,{type:'match',members:roomMembers(room),startsInMs:Math.max(0,room.readyAt-Date.now())});
     broadcastState(room);
   }
 }
-function handleMessage(ws,text){let msg;try{msg=JSON.parse(text);}catch{return;}
+async function handleMessage(ws,text){let msg;try{msg=JSON.parse(text);}catch{return;}
+  if(!msg||typeof msg!=='object'||Array.isArray(msg))return;
+  if(msg.type==='friendInvite'){
+    try{
+      if(!ws.account||!ws.room||ws.room.ai||ws.room.game||ws.slot!==0){wsSend(ws,{type:'notice',text:'請先在大廳建立等待房間，再邀請好友。'});return;}
+      if(Date.now()-(ws.lastFriendInvite||0)<3000)return;
+      ws.lastFriendInvite=Date.now();
+      if(!await accounts.areFriends(ws.account.id,msg.accountId)){wsSend(ws,{type:'notice',text:'只有已接受的好友可以邀請對戰。'});return;}
+      if(ws.destroyed||ws.room.game)return;
+      const targets=[...sockets].filter(s=>s.account?.id===msg.accountId&&!s.destroyed&&!s.room);
+      for(const target of targets)wsSend(target,{type:'friendInvite',room:ws.room.id,from:{name:ws.account.name,avatar:publicAvatar(ws.account.avatar)},expiresInMs:60000});
+      wsSend(ws,{type:'notice',text:targets.length?'已送出對戰邀請。':'好友目前離線或正在房間中，請稍後再邀請。'});
+    }catch{wsSend(ws,{type:'notice',text:'暫時無法送出邀請，請重試。'});}return;
+  }
   if(!ws.room){joinRoom(ws,msg);return;}
-  if(msg.type==='command'&&ws.room.game)applyCommand(ws.room.game,ws.slot,msg.command);
+  if(msg.type==='command'&&ws.room.game&&Date.now()>=(ws.room.readyAt||0))applyCommand(ws.room.game,ws.slot,msg.command);
   else if(msg.type==='ping')wsSend(ws,{type:'pong',now:Date.now()});
 }
 
@@ -600,7 +622,7 @@ const server=http.createServer(async(req,res)=>{
     if(pathname==='/api/profile'&&req.method==='POST'&&accounts.sameOrigin(req)){
       res.on('finish',async()=>{
         if(res.statusCode!==200)return;
-        try{const user=await accounts.identify(req);if(user)for(const socket of sockets)if(socket.account?.id===user.id)socket.account=user;}catch{}
+        try{const user=await accounts.identify(req);if(user)for(const socket of sockets)if(socket.account?.id===user.id){socket.account=user;if(socket.room&&!socket.room.game){socket.room.names[socket.slot]=safeName(user.name);broadcastLobby(socket.room);}}}catch{}
       });
     }
     if(pathname==='/api/logout'&&req.method==='POST'&&accounts.sameOrigin(req)){
@@ -609,7 +631,7 @@ const server=http.createServer(async(req,res)=>{
         res.on('finish',()=>{if(res.statusCode===200&&user)for(const socket of sockets)if(socket.account?.id===user.id)socket.end(wsFrame(8));});
       }catch{}
     }
-    await accounts.handle(req,res,pathname);
+    await accounts.handle(req,res,pathname,{online:id=>[...sockets].some(s=>s.account?.id===id&&!s.destroyed),friendsChanged:ids=>{for(const socket of sockets)if(ids.includes(socket.account?.id))wsSend(socket,{type:'friendsChanged'});}});
     return;
   }
   if(pathname==='/healthz'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'});res.end('ok');return;}
@@ -622,5 +644,5 @@ const server=http.createServer(async(req,res)=>{
 server.on('upgrade',upgrade);
 setInterval(()=>{for(const socket of sockets){if(socket.destroyed)continue;if(socket._appWaitingPong){socket.destroy();continue;}socket._appWaitingPong=true;socket.write(wsFrame(9));}},25000);
 setInterval(saveResults,10000);
-setInterval(()=>{const now=Date.now();for(const [id,room]of rooms){if(room.game&&!room.game.ended){const connected=room.ai?!!room.players[0]:!!room.players[0]&&!!room.players[1];if(connected)tickGame(room,TICK/1000);else if(room.disconnectAt&&now-room.disconnectAt>120000){rooms.delete(id);}}else if(!room.players.some(Boolean))rooms.delete(id);}},TICK);
+setInterval(()=>{const now=Date.now();for(const [id,room]of rooms){if(room.game&&!room.game.ended){const connected=room.ai?!!room.players[0]:!!room.players[0]&&!!room.players[1];if(connected&&now>=(room.readyAt||0))tickGame(room,TICK/1000);else if(room.disconnectAt&&now-room.disconnectAt>120000){rooms.delete(id);}}else if(!room.players.some(Boolean))rooms.delete(id);}},TICK);
 server.listen(PORT,HOST,()=>console.log(`風起群島伺服器已啟動： http://localhost:${PORT}`));

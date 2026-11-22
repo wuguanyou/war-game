@@ -43,11 +43,11 @@ test('PostgreSQL account lifecycle, private schema and atomic match history', as
   }
   const database = load('accounts-db.js', name => name === 'pg' ? { Pool } : null);
   const accounts = load('accounts.js', name => name === './accounts-db' ? database : null);
-  async function api(url, body, cookie) {
+  async function api(url, body, cookie,options={}) {
     const req = Readable.from(body === undefined ? [] : [Buffer.from(JSON.stringify(body))]);
-    Object.assign(req, { method: body === undefined ? 'GET' : 'POST', headers: { host: 'game.test', origin: 'http://game.test', cookie }, socket: { remoteAddress: 'test' } });
+    Object.assign(req, { url, method: body === undefined ? 'GET' : 'POST', headers: { host: 'game.test', origin: options.origin||'http://game.test', cookie }, socket: { remoteAddress: options.ip||'test' } });
     const res = { headers: {}, setHeader(key, value) { this.headers[key] = value; }, writeHead(status) { this.status = status; }, end(text) { this.body = JSON.parse(text); } };
-    await accounts.handle(req, res, url);
+    await accounts.handle(req, res, url.split('?')[0],{online:id=>id===options.onlineId});
     return res;
   }
   try {
@@ -102,6 +102,37 @@ test('PostgreSQL account lifecycle, private schema and atomic match history', as
     assert.equal((await engine.query('SELECT COUNT(*)::int AS n FROM windward.game_matches WHERE id=$1', [brokenId])).rows[0].n, 0);
     assert.equal((await engine.query('SELECT COUNT(*)::int AS n FROM windward.game_match_players WHERE match_id=$1', [brokenId])).rows[0].n, 0);
     assert.equal(acquired, released);
+    const friendsApi=(url,body,session,options={})=>api(url,body,session,{ip:crypto.randomUUID(),...options});
+    const otherId=second.body.user.id;
+    assert.equal((await friendsApi('/api/friends')).status,401);
+    const found=await friendsApi('/api/friends/search?username=player_two',undefined,cookie);
+    assert.equal(found.body.user.id,otherId);assert.equal(found.body.user.name,'另一名領航員');
+    assert.equal(found.body.user.bio,undefined);assert.equal(found.body.user.settings,undefined);
+    assert.equal((await friendsApi('/api/friends/search?username=player_one',undefined,cookie)).body.user,null);
+    assert.equal((await friendsApi('/api/friends/search?username=%25',undefined,cookie)).status,400);
+    assert.equal((await friendsApi('/api/friends',{action:'request',username:'player_one'},cookie)).status,400);
+    assert.equal((await friendsApi('/api/friends',{action:'request',username:'player_two'},cookie)).status,200);
+    assert.equal((await friendsApi('/api/friends',{action:'request',username:'player_two'},cookie)).status,409);
+    assert.equal((await friendsApi('/api/friends',{action:'request',username:'player_one'},secondCookie)).status,409);
+    assert.equal((await friendsApi('/api/friends',undefined,cookie)).body.outgoing.length,1);
+    assert.equal((await friendsApi('/api/friends',undefined,secondCookie)).body.incoming.length,1);
+    assert.equal((await friendsApi('/api/friends',{action:'accept',accountId:otherId},cookie)).status,409);
+    const stranger=await friendsApi('/api/register',{username:'stranger',password});const strangerCookie=stranger.headers['Set-Cookie'].split(';')[0];
+    assert.equal((await friendsApi('/api/friends',{action:'accept',accountId:user.id},strangerCookie)).status,409);
+    assert.equal((await friendsApi('/api/friends',{action:'accept',accountId:user.id},secondCookie)).status,200);
+    assert.equal(await accounts.areFriends(user.id,otherId),true);
+    const friendList=await friendsApi('/api/friends',undefined,secondCookie,{onlineId:user.id});
+    assert.equal(friendList.body.friends[0].avatar,avatar);assert.equal(friendList.body.friends[0].online,true);
+    assert.equal((await friendsApi('/api/friends',{action:'remove',accountId:otherId},cookie,{origin:'https://evil.test'})).status,403);
+    assert.equal((await friendsApi('/api/friends',{action:'remove',accountId:otherId},cookie)).status,200);
+    assert.equal(await accounts.areFriends(user.id,otherId),false);
+    assert.equal((await friendsApi('/api/friends',undefined,secondCookie)).body.friends.length,0);
+    await friendsApi('/api/friends',{action:'request',username:'player_two'},cookie);
+    assert.equal((await friendsApi('/api/friends',{action:'reject',accountId:user.id},secondCookie)).status,200);
+    await friendsApi('/api/friends',{action:'request',username:'player_two'},cookie);
+    assert.equal((await friendsApi('/api/friends',{action:'cancel',accountId:otherId},cookie)).status,200);
+    assert.equal((await engine.query("SELECT to_regclass('public.game_friendships') AS name")).rows[0].name,null);
+    assert.equal(acquired,released);
     assert.equal((await api('/api/logout', {}, cookie)).status, 200);
     assert.equal((await api('/api/history', undefined, cookie)).status, 401);
   } finally { await engine.close(); }

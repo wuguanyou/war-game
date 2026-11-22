@@ -4,8 +4,9 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 const source=fs.readFileSync(require.resolve('../server'),'utf8').split('const server=http.createServer')[0];
-const context=vm.createContext({require:name=>name==='./accounts'?{}:require(name),process,console,Buffer,setTimeout,clearTimeout});
-vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding,makeUnit,lineOfSight,recordIncome,flushIncome,serialize};',context);
+const accountStub={areFriends:async()=>false};
+const context=vm.createContext({require:name=>name==='./accounts'?accountStub:require(name),process,console,Buffer,setTimeout,clearTimeout});
+vm.runInContext(source+'\nglobalThis.gameRules={startGame,updateVision,applyCommand,cleanupAndVictory,playerBase,moveUnits,attackAndGather,tickBuildings,aiPlay,passable,findPath,idx,makeBuilding,makeUnit,lineOfSight,recordIncome,flushIncome,serialize,joinRoom,roomMembers,handleMessage,sockets};',context);
 const R=context.gameRules;
 function fresh(seed=1){const g=R.startGame(seed);R.updateVision(g);return g;}
 function step(g,seconds){for(let t=0;t<seconds;t+=.1){g.elapsed+=.1;R.moveUnits(g,.1);R.updateVision(g);R.attackAndGather(g,.1);R.tickBuildings(g,.1);R.cleanupAndVictory(g);}}
@@ -113,4 +114,28 @@ test('building ownership reaches the client and income numbers remain private',(
  const g=fresh();g.tiles[R.idx(6,6)].building=R.makeBuilding(0,'farm',6,6);
  g.effects=[{kind:'income',owner:0,resource:'food',amount:2,x:6.5,y:6.5,at:0},{kind:'income',owner:1,resource:'wood',amount:3,x:6.5,y:6.5,at:0}];
  const packet=R.serialize(g,0);assert.equal(packet.buildings[0].owner,0);assert.equal(packet.effects.length,1);assert.equal(packet.effects[0].owner,0);
+});
+function socket(account){return {account,messages:[],write(frame){const n=frame[1]&127,offset=n===126?4:n===127?10:2;this.messages.push(JSON.parse(frame.subarray(offset).toString()));}};}
+test('matching displays server-owned names and avatars without private profile data and pauses commands during countdown',async()=>{
+  const a=socket({id:'a',name:'海風隊長',avatar:'anchor:blue',bio:'private',settings:{secret:true}}),b=socket({id:'b',name:'島嶼守護者',avatar:'shield:gold'});
+  R.joinRoom(a,{type:'create',name:'spoofed',avatar:'javascript:alert(1)'});
+  assert.equal(a.messages.find(m=>m.type==='lobby').members[0].name,'海風隊長');
+  R.joinRoom(b,{type:'join',room:a.room.id,name:'spoofed'});
+  const match=a.messages.find(m=>m.type==='match');assert.equal(match.members[1].name,'島嶼守護者');assert.equal(match.members[1].avatar,'shield:gold');
+  assert.equal(match.members[0].bio,undefined);assert.equal(match.members[0].settings,undefined);assert.equal(match.members[0].id,undefined);
+  assert.ok(match.startsInMs>0&&match.startsInMs<=3500);
+  const g=a.room.game;const command=JSON.stringify({type:'command',command:{action:'build',building:'base',x:6,y:6,units:g.units.filter(u=>u.owner===0).map(u=>u.id)}});
+  await R.handleMessage(a,command);assert.equal(R.playerBase(g,0),null);
+  a.room.readyAt=0;await R.handleMessage(a,command);assert.ok(R.playerBase(g,0));
+});
+test('battle invitations only reach accepted friends outside rooms',async()=>{
+  const a=socket({id:'invite-a',name:'邀請者',avatar:'crown:gold'}),b=socket({id:'invite-b',name:'好友'});
+  R.joinRoom(a,{type:'create'});R.sockets.add(a);R.sockets.add(b);
+  try{
+    const invite=JSON.stringify({type:'friendInvite',accountId:'invite-b'});
+    await R.handleMessage(a,invite);assert.equal(b.messages.length,0);
+    accountStub.areFriends=async(x,y)=>x==='invite-a'&&y==='invite-b';a.lastFriendInvite=0;
+    await R.handleMessage(a,invite);assert.equal(b.messages[0].type,'friendInvite');assert.equal(b.messages[0].from.name,'邀請者');assert.equal(b.messages[0].room,a.room.id);
+    b.room={};b.messages=[];a.lastFriendInvite=0;await R.handleMessage(a,invite);assert.equal(b.messages.length,0);
+  }finally{accountStub.areFriends=async()=>false;R.sockets.delete(a);R.sockets.delete(b);}
 });

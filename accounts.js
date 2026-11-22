@@ -20,6 +20,15 @@ async function migrate() {
     return;
   }
   const definitions = [
+    `CREATE TABLE IF NOT EXISTS game_friendships (
+      account_low CHAR(36) NOT NULL,
+      account_high CHAR(36) NOT NULL,
+      requester_id CHAR(36) NOT NULL,
+      status VARCHAR(10) NOT NULL,
+      created_at BIGINT NOT NULL,
+      PRIMARY KEY (account_low,account_high),
+      INDEX friend_high (account_high)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`,
     `CREATE TABLE IF NOT EXISTS game_profiles (
       account_id CHAR(36) PRIMARY KEY,
       avatar TEXT NOT NULL,
@@ -159,7 +168,22 @@ async function history(userId) {
     }))
   };
 }
-async function handle(req, res, pathname) {
+async function areFriends(a,b){
+  if(!a||!b||a===b)return false;
+  await initialize();const [low,high]=[a,b].sort();
+  const [rows]=await pool.execute("SELECT status FROM game_friendships WHERE account_low=? AND account_high=?",[low,high]);
+  return rows[0]?.status==='accepted';
+}
+function friendUser(row){return{id:row.id,username:row.username,name:row.display_name,avatar:row.avatar||'compass:mint'};}
+async function friendList(user,online){
+  const [rows]=await pool.execute(`SELECT a.id,a.username,a.display_name,p.avatar,f.requester_id,f.status
+    FROM game_friendships f JOIN game_accounts a ON a.id=CASE WHEN f.account_low=? THEN f.account_high ELSE f.account_low END
+    LEFT JOIN game_profiles p ON p.account_id=a.id WHERE f.account_low=? OR f.account_high=? ORDER BY f.created_at DESC`,[user.id,user.id,user.id]);
+  const result={friends:[],incoming:[],outgoing:[]};
+  for(const row of rows){const kind=row.status==='accepted'?'friends':row.requester_id===user.id?'outgoing':'incoming';result[kind].push({...friendUser(row),online:!!online?.(row.id)});}
+  return result;
+}
+async function handle(req, res, pathname,context={}) {
   if (!pathname.startsWith('/api/')) return false;
   try {
     if (req.method === 'GET' && pathname === '/api/account') {
@@ -169,6 +193,54 @@ async function handle(req, res, pathname) {
       return true;
     }
     if (!sameOrigin(req)) { sendJson(res, 403, { error: '請從遊戲頁面操作。' }); return true; }
+    if(pathname==='/api/friends'||pathname==='/api/friends/search'){
+      const user=await identify(req);
+      if(!user){sendJson(res,401,{error:'請先登入使用好友功能。'});return true;}
+      if(req.method==='GET'&&pathname==='/api/friends'){
+        sendJson(res,200,await friendList(user,context.online));return true;
+      }
+      if(req.method==='GET'&&pathname==='/api/friends/search'){
+        const username=(new URL(req.url,'http://localhost').searchParams.get('username')||'').trim().toLowerCase();
+        if(!/^[a-z0-9_]{3,24}$/.test(username)){sendJson(res,400,{error:'請輸入完整登入帳號（3–24位英數或底線）。'});return true;}
+        const [rows]=await pool.execute('SELECT a.id,a.username,a.display_name,p.avatar FROM game_accounts a LEFT JOIN game_profiles p ON p.account_id=a.id WHERE a.username=? AND a.id<>?',[username,user.id]);
+        sendJson(res,200,{user:rows[0]?friendUser(rows[0]):null});return true;
+      }
+      if(req.method!=='POST'||pathname!=='/api/friends'){sendJson(res,404,{error:'找不到這個功能。'});return true;}
+      checkRate(req);const input=await readJson(req);
+      const action=input?.action;
+      if(!['request','accept','reject','cancel','remove'].includes(action)){sendJson(res,400,{error:'無效的好友操作。'});return true;}
+      let target=input.accountId;
+      if(action==='request'){
+        const username=typeof input.username==='string'?input.username.trim().toLowerCase():'';
+        if(!/^[a-z0-9_]{3,24}$/.test(username)){sendJson(res,400,{error:'請輸入完整登入帳號。'});return true;}
+        const [rows]=await pool.execute('SELECT id FROM game_accounts WHERE username=?',[username]);target=rows[0]?.id;
+      }
+      if(typeof target!=='string'||target===user.id||target.length>36){sendJson(res,400,{error:'找不到玩家，或不能加自己為好友。'});return true;}
+      const [low,high]=[user.id,target].sort();
+      const conn=await pool.getConnection();
+      try{
+        await conn.beginTransaction();
+        // Lock both accounts in the same order, so concurrent crossed requests stay unique.
+        const [people]=await conn.execute('SELECT id FROM game_accounts WHERE id IN (?,?) ORDER BY id FOR UPDATE',[low,high]);
+        if(people.length!==2)throw Object.assign(new Error('找不到這位玩家。'),{status:404});
+        const [rows]=await conn.execute('SELECT requester_id,status FROM game_friendships WHERE account_low=? AND account_high=?',[low,high]);
+        const relation=rows[0];
+        if(action==='request'){
+          if(relation)throw Object.assign(new Error(relation.status==='accepted'?'你們已經是好友。':relation.requester_id===user.id?'已送出申請，等待對方接受。':'對方已送出申請，請到收到申請接受。'),{status:409});
+          const [counts]=await conn.execute('SELECT account_low,account_high FROM game_friendships WHERE account_low IN (?,?) OR account_high IN (?,?)',[low,high,low,high]);
+          if([low,high].some(id=>counts.filter(r=>r.account_low===id||r.account_high===id).length>=100))throw Object.assign(new Error('好友與待處理申請數量已達上限，請先整理名單。'),{status:400});
+          await conn.execute("INSERT INTO game_friendships (account_low,account_high,requester_id,status,created_at) VALUES (?,?,?,'pending',?)",[low,high,user.id,Date.now()]);
+        }else{
+          const valid=relation&&(action==='accept'||action==='reject'?relation.status==='pending'&&relation.requester_id!==user.id:action==='cancel'?relation.status==='pending'&&relation.requester_id===user.id:relation.status==='accepted');
+          if(!valid)throw Object.assign(new Error('申請已變更，請重新整理好友名單。'),{status:409});
+          if(action==='accept')await conn.execute("UPDATE game_friendships SET status='accepted' WHERE account_low=? AND account_high=?",[low,high]);
+          else await conn.execute('DELETE FROM game_friendships WHERE account_low=? AND account_high=?',[low,high]);
+        }
+        await conn.commit();
+      }catch(error){await conn.rollback();throw error;}finally{conn.release();}
+      context.friendsChanged?.([user.id,target]);
+      sendJson(res,200,await friendList(user,context.online));return true;
+    }
     if (pathname === '/api/history' && req.method === 'GET') {
       const user = await identify(req);
       if (!user) { sendJson(res, 401, { error: '請先登入查看戰績。' }); return true; }
@@ -286,4 +358,4 @@ async function recordMatch(match) {
     throw error;
   } finally { connection.release(); }
 }
-module.exports = { handle, identify, sameOrigin, initialize, configured, recordMatch, pool, hashPassword, verifyPassword };
+module.exports = { handle, identify, sameOrigin, initialize, configured, recordMatch, pool, hashPassword, verifyPassword,areFriends };
