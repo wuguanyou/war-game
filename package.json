@@ -5,12 +5,22 @@
   "description": "風起群島 V5.1 像素即時領土戰原型",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:accounts": "node --test tests/accounts-postgres.test.js",
+    "start:local": "node scripts/start-local.js",
+    "setup:mysql": "node scripts/setup-mysql-cli.js",
+    "repair:mysql": "node scripts/setup-mysql-cli.js --repair",
+    "reset:mysql": "node scripts/reset-mysql.js",
+    "mysql:password": "node scripts/reset-mysql.js --show-password"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "mysql2": "^3.24.6"
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17"
   }
 }

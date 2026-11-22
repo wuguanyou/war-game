@@ -1,6 +1,6 @@
 # 風起群島 V5.1｜像素即時策略對戰
 
-依 V5.1 企劃重製的網頁 RTS 原型。戰場使用 16 位元風格的 Q 版角色、建築與資源圖集。村民會依資源拿出斧頭、十字鎬或採集籃，並用木槌施工。戰鬥動畫包含各兵種攻擊、受擊、倒地和遠程彈道，戰場與效果由 Canvas 繪製。帳號和戰績使用 MySQL。
+依 V5.1 企劃重製的網頁 RTS 原型。戰場使用 16 位元風格的 Q 版角色、建築與資源圖集。村民會依資源拿出斧頭、十字鎬或採集籃，並用木槌施工。戰鬥動畫包含各兵種攻擊、受擊、倒地和遠程彈道，戰場與效果由 Canvas 繪製。帳號和戰績支援雲端 PostgreSQL 與本機 MySQL。
 
 ## 啟動
 
@@ -17,7 +17,34 @@
 
 目前房間與戰局存在單一 Node.js 程序記憶體中；服務重啟或重新部署時進行中的房間會消失。免費服務長時間閒置後會休眠，喚醒時首次載入可能較慢；瀏覽器會自動重連並嘗試恢復尚存的房間。
 
-## MySQL 帳號與歷史戰績
+## 帳號與歷史戰績
+
+### 雲端 PostgreSQL（Supabase）
+
+玩家瀏覽器呼叫 Render 的遊戲 API，由 Render 直接連線 PostgreSQL。資料庫連線網址只存放在 Render 的 Environment，不放進網頁。自己的電腦不需開機。
+
+1. 在 Supabase 建立免費專案，設定資料庫密碼並自行保存。
+2. 從專案的 Connect 面板選擇 Session pooler，複製 PostgreSQL URI（IPv4 可用）。將 URI 的密碼占位符替換成專案資料庫密碼；特殊字元需 URL 編碼。
+3. 在 Render 的 `pixel-frontier-rts` 服務 → Environment 新增 `DATABASE_URL`，值為完整連線 URI。此設定會優先於 `MYSQL_*`。
+4. 程式預設啟用 TLS 並驗證伺服器憑證。Supabase 使用私人 CA 時，從 Database Settings 下載 Server root certificate，將完整 PEM 內容存入 Render 的 `PG_SSL_CA` 環境變數。無需關閉憑證驗證。
+5. 選 Save and deploy。首次連線會建立 `windward` schema 與四張資料表。schema 不授權 PUBLIC，也不放在 Supabase 預設公開的 `public` schema；資料由遊戲伺服器驗證登入後存取。
+6. 開啟遊戲網站建立帳號並查看戰績。`/api/account` 回傳 `available: true` 表示資料庫初始化成功。本機 MySQL 的既有帳號與戰績不會自動搬入 PostgreSQL。
+
+供其他 PostgreSQL 主機使用時，同樣設定 `DATABASE_URL`。明確需要未加密的內部網路或本機測試才設定 `PG_SSL=false`；遠端資料庫應維持 TLS。使用自己的 CA 時提供 `PG_SSL_CA`。連線池最多四條連線，戰績交易固定使用同一條連線。
+
+開發驗證：`npm run test:accounts` 使用 PGlite 的 PostgreSQL 引擎驗證登入、統計、唯一限制和交易回滾；實際雲端 DNS、TLS、權限與網路需在填入連線資料後另外驗證。免費服務額度及暫停規則以 Supabase 當時的方案為準。
+
+### 本機 MySQL（Windows）
+
+若已有自己的 root 密碼，要重新連接遊戲資料庫，執行 `npm run repair:mysql`，輸入目前的 MySQL 管理員帳號與密碼。程式會驗證資料表、建立新的遊戲專用帳號並更新本機連線設定，保留原本資料庫內容，且不會更改或儲存管理員密碼。舊連線設定會備份到同目錄、由 Git 忽略的 `.env.mysql.json.backup-*`。修復後請重新啟動本機遊戲伺服器。
+
+忘記本機 MySQL 26.10 的 root 密碼時，在以系統管理員身分開啟的命令提示字元執行 `npm run reset:mysql`。此工具只適用於這台電腦的 `MySQL2610` 服務與標準安裝路徑，會依官方 init-file 流程重設密碼、恢復服務並設定遊戲資料庫，不會關閉 MySQL 權限驗證。新密碼以 Windows DPAPI 加密保存在 `%LOCALAPPDATA%/Windward/mysql-root-password.dpapi`；以同一個 Windows 帳號執行 `npm run mysql:password` 可在自己的終端機查看。其他使用 root 的程式需要更新連線密碼。不要將查看結果貼到聊天或公開場合。
+
+確認 MySQL 在 `127.0.0.1:3306` 執行後，執行 `npm run setup:mysql`，依提示輸入管理員帳號與密碼（密碼輸入會隱藏）。設定程式會建立 `windward_game` 資料庫、隨機密碼的本機專用遊戲帳號，並驗證帳號與戰績資料表。管理員密碼不會儲存；遊戲連線設定存放在 Git 忽略的 `.env.mysql.json`，請勿分享或提交此檔案。
+
+設定成功後用 `npm run start:local` 啟動遊戲。本機設定不會自動套用到 Render；Render 的 `localhost` 指向 Render 主機，雲端版仍需配置可從 Render 存取的 MySQL 主機。
+
+### Render 雲端 MySQL
 
 在 Render 的 Environment 中設定 `MYSQL_HOST`、`MYSQL_PORT`（預設 3306）、`MYSQL_DATABASE`、`MYSQL_USER`、`MYSQL_PASSWORD`。資料庫需允許 Render 主機連線，帳號需有該資料庫的建表、查詢、寫入與刪除權限。資料庫要求 TLS 時設 `MYSQL_SSL=true`，私人 CA 可透過 `MYSQL_SSL_CA` 設定 PEM 憑證。TLS 會驗證伺服器憑證。
 

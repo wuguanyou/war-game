@@ -2,33 +2,23 @@
 
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
-const mysql = require('mysql2/promise');
+const { pool, configured, postgres } = require('./accounts-db');
 const scrypt = promisify(crypto.scrypt);
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
-const configured = !!(process.env.MYSQL_HOST && process.env.MYSQL_DATABASE && process.env.MYSQL_USER);
-const pool = configured ? mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  port: Number(process.env.MYSQL_PORT || 3306),
-  database: process.env.MYSQL_DATABASE,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  connectionLimit: 4,
-  connectTimeout: 10000,
-  charset: 'utf8mb4',
-  timezone: 'Z',
-  ssl: process.env.MYSQL_SSL === 'true' ? {
-    rejectUnauthorized: true,
-    ...(process.env.MYSQL_SSL_CA ? { ca: process.env.MYSQL_SSL_CA.replace(/\\n/g, '\n') } : {})
-  } : undefined
-}) : null;
 
 let ready;
 function initialize() {
-  if (!pool) return Promise.reject(new Error('MYSQL_NOT_CONFIGURED'));
+  if (!pool) return Promise.reject(new Error('DATABASE_NOT_CONFIGURED'));
   if (!ready) ready = migrate().catch(error => { ready = null; throw error; });
   return ready;
 }
 async function migrate() {
+  if (postgres) {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    await pool.query(fs.readFileSync(path.join(__dirname, 'sql', 'postgres.sql'), 'utf8'));
+    return;
+  }
   const definitions = [
     `CREATE TABLE IF NOT EXISTS game_accounts (
       id CHAR(36) PRIMARY KEY,
@@ -148,9 +138,9 @@ async function history(userId) {
   );
   const [totals] = await pool.execute(
     `SELECT COUNT(*) AS played,
-      COALESCE(SUM(m.winner=p.slot),0) AS wins,
-      COALESCE(SUM(m.winner>=0 AND m.winner<>p.slot),0) AS losses,
-      COALESCE(SUM(m.winner=-1),0) AS draws
+      COALESCE(SUM(CASE WHEN m.winner=p.slot THEN 1 ELSE 0 END),0) AS wins,
+      COALESCE(SUM(CASE WHEN m.winner>=0 AND m.winner<>p.slot THEN 1 ELSE 0 END),0) AS losses,
+      COALESCE(SUM(CASE WHEN m.winner=-1 THEN 1 ELSE 0 END),0) AS draws
       FROM game_match_players p JOIN game_matches m ON p.match_id=m.id WHERE p.account_id=?`, [userId]
   );
   return {
@@ -214,7 +204,7 @@ async function handle(req, res, pathname) {
           id, username, name || username, passwordHash
         ]);
       } catch (error) {
-        if (error.code !== 'ER_DUP_ENTRY') throw error;
+        if (!['ER_DUP_ENTRY', '23505'].includes(error.code)) throw error;
         sendJson(res, 409, { error: '這個帳號已有人使用。' });
         return true;
       }
@@ -230,7 +220,7 @@ async function handle(req, res, pathname) {
   } catch (error) {
     if (error.status) sendJson(res, error.status, { error: error.message });
     else {
-      const reason=error.code || (error.message==='MYSQL_NOT_CONFIGURED'?'MYSQL_NOT_CONFIGURED':'database error');
+      const reason=error.code || (error.message==='DATABASE_NOT_CONFIGURED'?'DATABASE_NOT_CONFIGURED':'database error');
       console.error('Account request failed:', reason);
       sendJson(res, 503, { error: configured ? '帳號服務暫時無法連線，請稍後重試。' : '帳號資料庫尚未連接，可先以訪客開始遊戲。' });
     }
@@ -244,7 +234,9 @@ async function recordMatch(match) {
   try {
     await connection.beginTransaction();
     const [insert] = await connection.execute(
-      'INSERT IGNORE INTO game_matches (id,mode,winner,duration_seconds,finished_at) VALUES (?,?,?,?,?)',
+      postgres
+        ? 'INSERT INTO game_matches (id,mode,winner,duration_seconds,finished_at) VALUES (?,?,?,?,?) ON CONFLICT (id) DO NOTHING'
+        : 'INSERT IGNORE INTO game_matches (id,mode,winner,duration_seconds,finished_at) VALUES (?,?,?,?,?)',
       [match.id, match.mode, match.winner, Math.floor(match.duration), match.finishedAt]
     );
     if (insert.affectedRows) {
