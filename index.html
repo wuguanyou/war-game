@@ -29,12 +29,12 @@
       background-image:var(--sprite);background-position:var(--sprite-x,0%) var(--sprite-y,0%);
       background-size:var(--sheet-w) var(--sheet-h);background-repeat:no-repeat;image-rendering:pixelated
     }
-    .brand-icon,.building-icon{--sprite:url('/assets/buildings-16bit.png');--sheet-w:300%;--sheet-h:200%}
+    .brand-icon,.building-icon{--sprite:url('assets/buildings-16bit.png');--sheet-w:300%;--sheet-h:200%}
     .brand-icon{width:34px;height:34px;flex:none;background-color:#243d3d;border:1px solid #53675b;border-radius:5px}
     .resources{display:flex;gap:5px;min-width:0;padding:3px;border:1px solid #38504e;border-radius:8px;background:#0e191e}
     .res-card{position:relative;display:flex;justify-content:center;align-items:center;gap:6px;min-width:65px;min-height:34px;padding:2px 8px;border-radius:4px}
     .res-card:hover,.res-card:focus-visible{background:#23353a}
-    .res-icon{--sprite:url('/assets/terrain-16bit.png');--sheet-w:300%;--sheet-h:200%;--sprite-y:100%;width:24px;height:24px;flex:none}
+    .res-icon{--sprite:url('assets/terrain-16bit.png');--sheet-w:300%;--sheet-h:200%;--sprite-y:100%;width:24px;height:24px;flex:none}
     .res-card:nth-child(1) .res-icon{--sprite-x:100%}
     .res-card:nth-child(2) .res-icon{--sprite-y:0%}
     .res-card:nth-child(4) .res-icon{--sprite-x:50%}
@@ -97,7 +97,7 @@
     .unit-list{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;max-width:250px}
     .unit-chip{padding:2px 5px;border:1px solid #586e64;border-radius:4px;background:#253b40;font-size:10px}
     .unit-icon,.building-icon{display:inline-block;width:19px;height:19px;vertical-align:middle;margin-right:3px}
-    .unit-icon{--sprite:url('/assets/units-16bit.png');--sheet-w:1300%;--sheet-h:500%;--sprite-y:var(--unit-row)}
+    .unit-icon{--sprite:url('assets/units-16bit.png');--sheet-w:1300%;--sheet-h:500%;--sprite-y:var(--unit-row)}
     .context-icon.unit-icon{width:31px;height:31px;color:transparent;margin:0}
     .note{margin-top:6px;color:var(--muted);font-size:11px}
     .dock-tools{margin-left:auto;display:flex;align-items:flex-end;gap:8px;flex-shrink:0}
@@ -286,6 +286,85 @@
     }
     @media(max-width:620px){.lobby-top-tools{flex-wrap:wrap;justify-content:flex-end}.history-row{grid-template-columns:45px minmax(0,1fr)}.history-row>small{grid-column:2}.account-card,.history-card{padding:18px}}
 
+    /* Title and lobby share the same illustrated world and heraldic controls. */
+    .entry-page{position:fixed;z-index:30;inset:0;isolation:isolate;min-height:100dvh;overflow:auto;background:#7eb7ce;color:#fff0c8;color-scheme:dark}
+    .entry-scene{position:fixed;z-index:-3;inset:0;width:100%;height:100%;object-fit:cover;object-position:63% center}
+    .entry-page::before{content:"";position:fixed;z-index:-2;inset:0;pointer-events:none;background:linear-gradient(90deg,#0c254a9c,transparent 54%),linear-gradient(0deg,#0a2144d1,transparent 35%,transparent 80%,#1029474a)}
+    .entry-header{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:24px 4vw;gap:20px}
+    .cover-edition{font:12px Georgia,serif;letter-spacing:.18em;color:#f3e8c8;text-shadow:0 2px 7px #10283e}.cover-edition span{display:block;font:8px Georgia,serif;letter-spacing:.22em;margin-top:7px;color:#b9d2d8}.account-edit{padding-left:12px;margin-left:4px;border-left:1px solid #c2c3a96e;font-size:10px;color:#d3ddce}.title-account{border:0;cursor:pointer}.title-account:hover{background:#102d459c}.fantasy-button{position:relative;isolation:isolate;border:0;border-radius:0;padding:9px 25px;background:linear-gradient(120deg,#193f52e8,#10283ae8);color:#f6e5b5;font-family:"Noto Serif TC","PMingLiU",serif;font-weight:700;letter-spacing:.15em;clip-path:polygon(9px 0,calc(100% - 9px) 0,100% 9px,100% calc(100% - 9px),calc(100% - 9px) 100%,9px 100%,0 calc(100% - 9px),0 9px);box-shadow:inset 0 0 0 1px #a4a67e;transition:filter .18s}
+    .fantasy-button::after{content:"";position:absolute;inset:3px;border:1px solid #b9c3b268;clip-path:inherit;pointer-events:none}.fantasy-button:hover:not(:disabled){filter:brightness(1.25)}
+    .title-account{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.08em;text-shadow:0 2px 8px #09263f;background:linear-gradient(90deg,transparent,#12334b9c);padding:8px 15px;max-width:42%;overflow-wrap:anywhere}
+    .title-account i{font-size:25px;font-style:normal;color:#f4dca1}
+    .entry-layout{position:relative;min-height:calc(100dvh - 135px)}
+    .title-logo{position:absolute;top:7vh;left:6vw;width:min(450px,42vw);text-align:center;filter:drop-shadow(0 4px 10px #0b203c75);animation:logo-arrive 1.2s ease-out both}
+    .logo-crest{position:relative;width:70px;height:70px;margin:0 auto 3px;color:#fff0ba}
+    .logo-crest::before,.logo-crest::after{content:"";position:absolute;width:95px;height:1px;background:linear-gradient(90deg,transparent,#dcc38e);right:calc(100% + 10px);top:50%}.logo-crest::after{left:calc(100% + 10px);right:auto;transform:rotate(180deg)}
+    .logo-crest svg{width:100%;height:100%;fill:#1a456869;stroke:#f7df9e;stroke-width:1.2}.logo-crest svg path{fill:#a8dcea33;stroke-width:1.5}
+    .logo-overline{font-size:11px;letter-spacing:.27em;color:#fff1c4;margin:13px 0 10px}
+    .title-logo h1{margin:0;font-family:"Noto Serif TC","PMingLiU",serif;font-size:clamp(44px,5.7vw,78px);font-weight:900;letter-spacing:.08em;line-height:1.25;color:#fff3cc;text-shadow:0 2px #806735,2px 3px #112b42,-1px -1px #fdf3d6,0 7px 15px #071c39;-webkit-text-stroke:.5px #cbb37b}
+    .logo-english{font:19px Georgia,"Times New Roman",serif;letter-spacing:.22em;margin:7px 0;color:#f1d99d;text-shadow:0 2px 3px #0c2340}.logo-english span{color:#fff6dd}
+    .logo-rule{display:flex;align-items:center;gap:8px;justify-content:center;color:#f0d79b;margin:16px auto 0;max-width:310px;font-size:9px}.logo-rule::before,.logo-rule::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,#e9d6a0)}.logo-rule::after{transform:rotate(180deg)}
+    .title-tagline{font-size:12px;letter-spacing:.17em;line-height:1.8;color:#f3ead5;margin:12px 0}
+    .title-start{position:absolute;left:50%;bottom:7vh;transform:translateX(-50%);display:grid;grid-template-columns:auto auto auto;align-items:center;column-gap:25px;row-gap:7px;min-height:88px;min-width:330px;padding:15px 35px;border:0;background:radial-gradient(ellipse,#18384b75,transparent 72%);color:#fff0be;text-shadow:0 2px 5px #071b36;cursor:pointer;animation:start-breathe 3s ease-in-out infinite}
+    .title-start::before,.title-start::after{content:"";position:absolute;left:-30px;right:-30px;height:1px;background:linear-gradient(90deg,transparent,#ebd6a7a3,transparent);top:5px}.title-start::after{top:auto;bottom:5px}
+    .title-start strong{font-family:"Noto Serif TC","PMingLiU",serif;font-weight:500;font-size:29px;letter-spacing:.25em;white-space:nowrap}.title-start small{grid-row:2;grid-column:2;font:11px Georgia,serif;letter-spacing:.28em}.start-jewel{grid-row:1/3;font-size:11px;color:#e9d096}.start-jewel:last-child{grid-column:3}.title-start:hover:not(:disabled){color:white;filter:drop-shadow(0 0 9px #e8c77e)}.title-start:disabled{opacity:.5;cursor:wait;animation:none}
+    .entry-footer{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;gap:15px;padding:16px 3vw;font-size:10px;letter-spacing:.12em;color:#e8e4d2;text-shadow:0 1px 4px #071b36}.title-cloud::before{content:"◆";font-size:7px;margin-right:8px;color:#a8d8c2}
+    .account-drawer{position:fixed;z-index:4;top:0;bottom:0;right:0;width:min(470px,100%);padding:44px 43px 30px;overflow:auto;background:linear-gradient(135deg,#13364bf2,#0a1b32f5);box-shadow:-25px 0 80px #06152b75;border-left:1px solid #d2bc83;animation:drawer-arrive .35s ease-out both;backdrop-filter:blur(16px)}
+    .account-drawer::before{content:"";position:fixed;top:16px;bottom:16px;right:16px;width:calc(min(470px,100%) - 33px);border:1px solid #a0b7b92b;pointer-events:none}.drawer-close{position:absolute;top:20px;right:24px;background:none;border:0;color:#f3dfae;font:38px Georgia,serif;line-height:1;z-index:1}
+    .drawer-crest{width:76px;height:76px;border:1px solid #beaa72;outline:1px solid #9eb8bc55;outline-offset:6px;transform:rotate(45deg);display:grid;place-items:center;margin:20px auto 30px;color:#b5edf4;font-size:48px;background:radial-gradient(circle,#1e6173,#0a2338)}
+    .drawer-kicker{text-align:center;color:#aebdbb;font:9px Georgia,serif;letter-spacing:.27em;margin:0 0 15px}
+    .entry-page .account-card{width:100%;padding:0;border:0;background:none;box-shadow:none;border-radius:0;color:#f6e7c4}
+    .entry-page .account-card h2{font-size:25px;letter-spacing:.1em;text-align:center;margin:0 0 22px;padding-bottom:18px;border-bottom:1px solid #b2a17a88;color:#fff0ce}
+    .entry-page .account-tabs{display:flex;gap:4px;background:none;margin:0 0 18px;border-bottom:1px solid #a5b0a745}
+    .entry-page .account-tabs button{flex:1;min-height:40px;padding:8px;border:0;border-radius:0;background:none;color:#91b1b7;font-size:13px;letter-spacing:.13em}
+    .entry-page .account-tabs button[aria-selected="true"]{background:linear-gradient(0deg,#60837e33,transparent);color:#ffe4a3;border-bottom:2px solid #cfb879}
+    .entry-page .account-card label{font-size:12px;color:#e2d3af;letter-spacing:.1em;margin:14px 0 7px}
+    .entry-page .account-card input{height:43px;padding:10px 14px;border:1px solid #a2b8af85;border-radius:2px;background:#061b2c66;color:#fff4d9;box-shadow:inset 0 2px 8px #06132355}
+    .entry-page #accountRules{display:block;font-size:10px;color:#93aaaf;margin:7px 0 0}
+    .entry-page .account-status{font-size:12px;min-height:25px;line-height:1.7;color:#f4c991;margin:16px 0 10px}
+    .entry-page .entry-launch{display:flex;align-items:center;justify-content:center;gap:25px;position:relative;left:auto;bottom:auto;width:100%;min-height:52px;margin:0;border:0;background:linear-gradient(135deg,#dac38c,#f6e4b8 45%,#ad925a);color:#1b3543;text-shadow:0 1px #fff4ce;box-shadow:inset 0 0 0 1px #efe4be;font-size:17px}
+    .entry-launch strong{font-family:"Noto Serif TC","PMingLiU",serif;font-weight:700;letter-spacing:.2em}.entry-launch:disabled{opacity:.5;cursor:wait}
+    .entry-page .account-footer{display:flex;justify-content:center;gap:15px;flex-wrap:wrap;margin-top:19px}.entry-page .account-footer button,.entry-page .entry-link{min-height:35px;padding:5px 0;border:0;border-radius:0;border-bottom:1px solid #a28f5c;background:none;color:#d7d3b3;font-size:12px}
+    .drawer-note{text-align:center!important;color:#73949f!important;font-size:10px;letter-spacing:.06em;margin:20px 0 0!important}
+    .entry-identity{display:flex;align-items:center;gap:20px;padding:10px 0 20px}.entry-avatar{display:grid;place-items:center;width:74px;height:74px;border-radius:50%;border:2px solid #bea775;background:radial-gradient(circle,#285c6c,#0c253b);color:#f5dc9d;font-size:34px;flex:none}.entry-identity p{font-size:20px;color:#f6e5bb;margin:0 0 5px;overflow-wrap:anywhere}.entry-identity small{display:block;font-size:11px;color:#96b6c0;margin-bottom:8px;overflow-wrap:anywhere}
+    .title-particles{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}.title-particles i{position:absolute;left:var(--x,20%);top:110%;width:7px;height:22px;background:linear-gradient(135deg,#fffbdfdd,#d6ecf47a);border-radius:100% 0 100% 0;animation:wind-petal 19s linear infinite;filter:drop-shadow(0 0 4px #d8f1ff)}.title-particles i:nth-child(2){left:40%;animation-delay:-5s;width:5px;height:15px}.title-particles i:nth-child(3){left:75%;animation-delay:-11s}.title-particles i:nth-child(4){left:8%;animation-delay:-15s}.title-particles i:nth-child(5){left:58%;animation-delay:-3s;width:4px;height:12px}.title-particles i:nth-child(6){left:90%;animation-delay:-8s}
+    .title-start:focus-visible{outline:none;color:#fff8df;filter:drop-shadow(0 0 9px #e8d59a)}
+    .title-start:focus-visible::before,.title-start:focus-visible::after{height:2px;background:linear-gradient(90deg,transparent,#ffe6a9,transparent)}
+    #lobbyTitle:focus{outline:none}
+    #guideModal{z-index:50}
+    .lobby-page{background:#12374a;color:#f5e8c6;min-height:100dvh}.lobby-scene{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:61% center}
+    .lobby-page::after{height:100%;background:linear-gradient(0deg,#07192fe8,transparent 40%),linear-gradient(90deg,#0d2d4a9c,transparent 65%),linear-gradient(180deg,#0e253f83,transparent 23%)}
+    .lobby-shell{position:relative;height:100dvh;min-height:650px;padding:25px 35px}
+    .lobby-top{position:relative;z-index:2;align-items:flex-start}.lobby-top .brand{display:flex;background:none!important;color:#f6e6bd;padding:0!important;text-shadow:0 1px 5px #06192e}
+    .lobby-top .brand-icon{display:block;width:62px;height:62px;border-radius:50%;border:2px solid #d6c08b;outline:1px solid #f4e4b47a;outline-offset:4px;background-color:#174057;flex:none}
+    .lobby-top .brand strong{display:block;font-family:"Noto Serif TC","PMingLiU",serif;font-size:19px;letter-spacing:.1em;padding-bottom:6px;border-bottom:1px solid #d4bd807a}.lobby-top .brand small{display:block;font:8px Georgia,serif;letter-spacing:.16em;color:#b8ccd0;margin-top:6px}
+    .lobby-top-tools{gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:60%}.lobby-top .control{padding:7px 8px;min-height:35px;border:0;border-bottom:1px solid #b6a7828c;border-radius:0;background:none;color:#f5e6c4;font-size:12px;text-shadow:0 1px 4px #061a30}
+    .lobby-top-tools .connection-chip{color:#e5f4e5;background:#0b2b3d85;border-radius:0;padding:7px 11px;clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px)}
+    .lobby-content{width:100%;margin:0;padding:0}.hero-copy{position:absolute;left:40px;top:25%;max-width:430px}.hero-copy h1{color:#f9edc3;font-size:53px;text-shadow:0 2px #7d642c,0 4px 12px #08213c;letter-spacing:.1em}.hero-copy p{color:#e4e9de;font-size:13px;line-height:1.8;text-shadow:0 1px 5px #08213c}
+    .lobby-modes{position:absolute;bottom:28px;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;gap:50px;margin:0;padding:12px 25px 0;border-top:1px solid #c6b47d44;background:linear-gradient(0deg,#10283c55,transparent);height:125px}
+    .lobby-modes .menu-choice{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:160px;min-height:110px;padding:4px 7px;border:0;border-radius:0;background:none;color:#eadbb4;text-align:center;font-size:20px;font-family:"Noto Serif TC","PMingLiU",serif;font-weight:500;letter-spacing:.12em;text-shadow:0 2px 6px #061b31;transition:filter .2s,transform .2s}
+    .lobby-modes .menu-choice::before{display:none}.lobby-modes .menu-choice:hover:not(:disabled),.lobby-modes .menu-choice:focus-visible{transform:translateY(-4px);color:#fff4c5;filter:drop-shadow(0 0 9px #d5bf8577)}.lobby-modes .menu-choice:disabled{color:#8a9d9f}
+    .mode-icon{width:47px;height:47px;fill:#b9d8d51a;stroke:#f1dda4;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 2px 3px #092130)}.menu-choice small{display:block;font:8px Georgia,serif;letter-spacing:.15em;color:#9eb8bc;margin-top:5px}
+    .lobby-modes details{width:160px;position:relative}.lobby-modes summary{list-style:none}.lobby-modes summary::-webkit-details-marker{display:none}.join-form{position:absolute;bottom:125px;left:50%;transform:translateX(-50%);width:300px;grid-template-columns:1fr auto;gap:12px;padding:20px;background:#102d43f0;border:1px solid #bea979;box-shadow:0 8px 24px #07162c66}.join-form label{color:#f4e0ae}.lobby-page .join-form input{background:#081d30;color:#fff1cf;border-color:#a0afa4;border-radius:0}
+    .lobby-profile{position:absolute;top:113px;left:35px;border:0;padding:0;gap:8px;font-size:10px;color:#c4d9d8}.lobby-profile input{background:#0c2b4166;color:#fff0c8;border:0;border-bottom:1px solid #c8b78d88;border-radius:0;min-height:28px;padding:4px 6px;width:145px;font-size:12px}
+    .waiting-room{position:absolute;top:26%;right:6vw;width:min(360px,85%);padding:25px;background:linear-gradient(135deg,#163c51ed,#0b2339ef);border:1px solid #b5a16e;clip-path:polygon(15px 0,100% 0,100% calc(100% - 15px),calc(100% - 15px) 100%,0 100%,0 15px);box-shadow:0 0 30px #061b3855}.waiting-room h2{color:#fff0bf}.waiting-room p{color:#c9d8d8}.share-code{color:#f7df99}.room-members li{color:#f4e6c3;border-color:#aebcaa44}.room-members li:last-child{color:#a3c1c8}.waiting-actions .control{border-radius:0;background:#244758!important;color:#f2e1b3!important;border-color:#b5ac8a!important}
+    .lobby-state{position:absolute;bottom:5px;left:20px;right:20px;text-align:center;color:#f3d69a;font-size:11px}
+    @keyframes logo-arrive{from{opacity:0;transform:translateY(12px);filter:blur(3px)}to{opacity:1;transform:translateY(0);filter:blur(0)}}
+    @keyframes start-breathe{0%,100%{opacity:.75}50%{opacity:1;filter:drop-shadow(0 0 5px #e5d49a)}}
+    @keyframes drawer-arrive{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+    @keyframes wind-petal{0%{transform:translate(0,0) rotate(10deg);opacity:0}12%{opacity:.8}80%{opacity:.7}100%{transform:translate(170px,-120vh) rotate(230deg);opacity:0}}
+    @media(max-width:760px){
+      .entry-header{padding:17px 18px;align-items:flex-start;gap:10px}.cover-edition{font-size:9px;letter-spacing:.08em}.cover-edition span{font-size:6px;margin-top:6px}.account-edit{display:none}.fantasy-button{padding:8px 16px;font-size:12px}.title-account{max-width:35%;font-size:9px;padding:3px 0;background:none;gap:4px}.title-account i{font-size:17px}
+      .entry-scene{object-position:85% center}.entry-page::before{background:linear-gradient(0deg,#071b3fe3,transparent 48%),linear-gradient(90deg,#14344ea6,transparent 78%)}.entry-layout{min-height:calc(100dvh - 95px)}
+      .title-logo{left:10vw;top:31vh;width:80vw}.logo-crest{width:50px;height:50px}.logo-crest::before,.logo-crest::after{width:44px}.logo-overline{font-size:8px;letter-spacing:.14em}.title-logo h1{font-size:clamp(34px,8vw,57px)}.logo-english{font-size:12px;letter-spacing:.13em}.logo-rule{max-width:200px;margin-top:12px}.title-tagline{font-size:9px;letter-spacing:.03em}
+      .title-start{min-width:265px;column-gap:16px;bottom:11vh;padding:15px 17px}.title-start strong{font-size:25px}.title-start small{font-size:9px}.title-start::before,.title-start::after{left:-5px;right:-5px}.entry-footer{padding:16px;font-size:8px;letter-spacing:0}
+      .account-drawer{padding:28px 28px 22px}.drawer-crest{width:60px;height:60px;margin:20px auto 26px;font-size:40px}.drawer-kicker{font-size:8px}.entry-page .account-card h2{font-size:22px;margin-bottom:18px}.entry-page .account-footer{gap:15px}
+      .lobby-shell{padding:20px 19px;min-height:730px}.lobby-top .brand-icon{width:45px;height:45px}.lobby-top .brand strong{font-size:14px;max-width:130px;overflow-wrap:anywhere}.lobby-top .brand small{font-size:6px;letter-spacing:.08em}.lobby-top-tools{gap:5px;max-width:43%}.lobby-top .control{font-size:10px;min-height:27px;padding:4px}.lobby-top-tools .connection-chip{font-size:9px;padding:4px 7px}
+      .lobby-scene{height:100%;object-position:85% center}.lobby-page::after{height:100%;background:linear-gradient(0deg,#07192ff2,transparent 65%),linear-gradient(90deg,#0d2d4a99,transparent)}.lobby-profile{top:106px;left:20px;display:block}.lobby-profile label{display:block;font-size:9px;margin-bottom:4px}.lobby-profile input{width:135px}.hero-copy{left:22px;top:27%;max-width:240px}.hero-copy h1{font-size:39px}.hero-copy p{font-size:11px;max-width:195px}
+      .lobby-modes{gap:9px;bottom:30px;padding-inline:12px;height:135px}.lobby-modes .menu-choice,.lobby-modes details{width:105px}.lobby-modes .menu-choice{font-size:16px;gap:10px;min-height:110px}.mode-icon{width:39px;height:39px}.menu-choice small{font-size:7px}.join-form{left:50%;width:265px;bottom:130px}.waiting-room{top:auto;bottom:90px;right:7%;width:86%;padding:22px}.lobby-state{bottom:6px;font-size:10px}
+    }
+    @media(max-height:550px) and (min-width:761px){.title-logo{top:0;width:340px}.logo-crest{width:45px;height:45px}.title-logo h1{font-size:50px}.logo-overline{margin:7px 0}.title-start{bottom:0}.account-drawer{padding-top:20px}.drawer-crest{display:none}}
+    @media(prefers-reduced-motion:reduce){.title-logo,.title-start,.account-drawer,.title-particles i{animation:none!important}.fantasy-button,.lobby-modes .menu-choice{transition:none!important}}
   </style>
 </head>
 <body>
@@ -372,11 +451,11 @@
     </main>
   </div>
 
-  <main class="lobby-page" id="lobbyPage" aria-labelledby="lobbyTitle">
-    <img class="lobby-scene" src="/assets/lobby-windward.jpg" alt="" fetchpriority="high">
+  <main class="lobby-page" id="lobbyPage" aria-labelledby="lobbyTitle" hidden>
+    <img class="lobby-scene" src="assets/lobby-windward.jpg" alt="" fetchpriority="high">
     <div class="lobby-shell">
       <header class="lobby-top">
-        <div class="brand"><span class="brand-icon" aria-hidden="true"></span><strong>遊戲大廳</strong></div>
+        <div class="brand"><span class="brand-icon" aria-hidden="true"></span><div><strong id="lobbyCommander">群島指揮官</strong><small>WINDWARD COMMANDER</small></div></div>
         <div class="lobby-top-tools">
           <span class="connection-chip"><i class="connection" id="lobbyConnectionDot" aria-hidden="true"></i><span id="lobbyConnectionText">未連線</span></span>
           <button class="control" id="lobbyGuide" type="button">操作指南</button>
@@ -392,15 +471,15 @@
         </div>
         <div id="lobbyOptions">
           <nav class="lobby-modes" aria-label="對局模式">
-            <button class="menu-choice" id="createRoom" type="button" disabled><span class="menu-mark" aria-hidden="true">⚔︎</span>建立 1 對 1 對戰</button>
+            <button class="menu-choice" id="createRoom" type="button" disabled><svg class="mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M12 8l9 2 31 37-6 6L9 22zM52 8l-9 2L12 47l6 6 37-31zM9 42l13 13M42 55l13-13M15 52l-6 7M49 52l6 7"/></svg><span>對戰出征<small>1 vs 1</small></span></button>
             <details>
-              <summary class="menu-choice"><span class="menu-mark" aria-hidden="true">›</span>加入好友對戰</summary>
+              <summary class="menu-choice"><svg class="mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 10h28v42H18zM25 18h28v37H25M10 16h8M8 25h10M8 34h10M32 27l5-5 5 5-5 7zM32 40h13"/></svg><span>好友對戰<small>ROOM CODE</small></span></summary>
               <form class="join-form" id="joinForm">
                 <label for="roomInput">六碼房間碼</label><input id="roomInput" maxlength="6" autocomplete="off" spellcheck="false" required>
                 <button class="control" id="joinRoom" type="submit" disabled>加入</button>
               </form>
             </details>
-            <button class="menu-choice" id="practice" type="button" disabled><span class="menu-mark" aria-hidden="true">▷</span>單人 AI 練習</button>
+            <button class="menu-choice" id="practice" type="button" disabled><svg class="mode-icon" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 5l20 8v17c0 14-20 27-20 27S12 44 12 30V13zM32 17v24M22 29h20M21 10L8 15v16M43 10l13 5v16"/></svg><span>單人戰役<small>AI TRAINING</small></span></button>
           </nav>
           <div class="lobby-profile"><label for="nameInput">指揮官名稱</label><input id="nameInput" maxlength="16" value="指揮官"></div>
         </div>
@@ -416,25 +495,48 @@
   </main>
 
   <div class="modal hidden" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideTitle"><div class="guide-card"><h2 id="guideTitle">戰場操作</h2><ul><li>左鍵選人物，再左鍵點空地移動、點資源採集、點敵軍攻擊。拖曳框選部隊，Shift 加選。</li><li>右鍵空地移動、右鍵資源採集、右鍵敵軍或敵方建築攻擊。觸控可選部隊後按「下達指令」，再點目標。</li><li>按 X 可指定攻擊，按 Z 停止部隊，Esc 或右鍵可取消正在指定的指令。</li><li>右下角按「招募部隊」，就能訓練村民或建造兵營。兵營完工後回到這裡選兵種。右鍵自家城門可開關。門下有單位時會等單位離開後關門。</li><li>中鍵拖地圖，滾輪縮放。也可用 WASD、方向鍵、小地圖，或用手指拖曳地圖。</li></ul><button id="closeGuide">返回戰場</button></div></div>
-  <div class="modal hidden" id="accountModal" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
-    <div class="account-card">
-      <h2 id="accountTitle">指揮官登入</h2>
-      <p>登入後保存每場勝敗與對戰紀錄。</p>
-      <div class="account-tabs" role="tablist" aria-label="帳號操作">
-        <button id="loginTab" type="button" role="tab" aria-selected="true">登入</button>
-        <button id="registerTab" type="button" role="tab" aria-selected="false">建立帳號</button>
+  <main class="entry-page" id="accountModal" aria-labelledby="entryTitle" data-account="guest">
+    <img class="entry-scene" src="assets/cover-windward-v3.jpg" alt="" fetchpriority="high">
+    <div class="title-particles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <header class="entry-header">
+      <span class="cover-edition">WINDWARD ISLES <span>REAL-TIME STRATEGY</span></span>
+      <button class="title-account" id="entryAccount" type="button" aria-label="登入或管理帳號"><i aria-hidden="true">✧</i><span id="entryHeaderAccount">確認帳號中</span><span class="account-edit">帳號管理 ›</span></button>
+    </header>
+    <div class="entry-layout">
+      <div class="title-logo">
+        <div class="logo-crest" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38"/><circle cx="50" cy="50" r="27"/><path d="M50 2l8 39 40 9-40 9-8 39-8-39L2 50l40-9zM24 24l26 10 26-10-10 26 10 26-26-10-26 10 10-26z"/><circle cx="50" cy="50" r="7"/></svg></div>
+        <p class="logo-overline">風 起 之 時 · 群 島 爭 鋒</p>
+        <h1 id="entryTitle">風起群島</h1>
+        <p class="logo-english">WINDWARD <span>ISLES</span></p>
+        <div class="logo-rule" aria-hidden="true"><span>◆</span></div>
+        <p class="title-tagline">以你的意志，改寫群島的戰局。</p>
       </div>
-      <form id="accountForm">
-        <label for="accountUsername">帳號</label><input id="accountUsername" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" aria-describedby="accountRules" required>
-        <small id="accountRules">3–24 位英數或底線</small>
-        <div id="registerNameField" hidden><label for="accountName">指揮官名稱</label><input id="accountName" name="name" autocomplete="nickname" maxlength="16"></div>
-        <label for="accountPassword">密碼</label><input id="accountPassword" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
-        <button class="account-primary" id="accountSubmit" type="submit">登入</button>
-      </form>
-      <p class="account-status" id="accountStatus" role="status"></p>
-      <div class="account-footer"><button type="button" id="guestPlay">先以訪客遊玩</button><button type="button" id="closeAccount">關閉</button></div>
+      <button id="titleStart" class="title-start" type="button" disabled><span class="start-jewel" aria-hidden="true">◆</span><strong>點擊開始</strong><small>TAP TO START</small><span class="start-jewel" aria-hidden="true">◆</span></button>
     </div>
-  </div>
+    <footer class="entry-footer"><span class="title-cloud" id="entryConnection">正在連接帳號服務</span><span>即時策略對戰 · 風起群島</span></footer>
+    <section class="account-drawer" id="entryDrawer" role="dialog" aria-modal="true" aria-labelledby="accountTitle" hidden>
+      <button id="entryDrawerClose" class="drawer-close" type="button" aria-label="關閉帳號選單">×</button>
+      <div class="drawer-crest" aria-hidden="true">✧</div>
+      <p class="drawer-kicker">COMMANDER'S GATE</p>
+      <div class="account-card">
+        <h2 id="accountTitle">指揮官登入</h2>
+        <div class="entry-identity" id="entryIdentity" hidden><span class="entry-avatar" aria-hidden="true">⚑</span><div><p id="entryDisplayName"></p><small id="entryUsername"></small><button class="entry-link" id="entryChange" type="button">切換登入帳號</button></div></div>
+        <div id="entryCredentials">
+          <div class="account-tabs" role="tablist" aria-label="帳號操作"><button id="loginTab" type="button" role="tab" aria-selected="true">登入</button><button id="registerTab" type="button" role="tab" aria-selected="false">建立帳號</button></div>
+          <form id="accountForm">
+            <label for="accountUsername">帳號</label><input id="accountUsername" name="username" autocomplete="username" minlength="3" maxlength="24" pattern="[a-zA-Z0-9_]{3,24}" aria-describedby="accountRules" required>
+            <small id="accountRules">3–24 位英數或底線</small>
+            <div id="registerNameField" hidden><label for="accountName">指揮官名稱</label><input id="accountName" name="name" autocomplete="nickname" maxlength="16"></div>
+            <label for="accountPassword">密碼</label><input id="accountPassword" name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+          </form>
+        </div>
+        <p class="account-status" id="accountStatus" role="status"></p>
+        <button class="entry-launch fantasy-button" id="accountSubmit" type="submit" form="accountForm" disabled><span aria-hidden="true">✧</span><strong id="entryButtonText">登入遊戲</strong><span aria-hidden="true">✧</span></button>
+        <div class="account-footer"><button type="button" id="guestPlay" disabled>以訪客身分進入</button><button type="button" id="closeAccount" hidden>返回大廳</button><button class="entry-link" id="entryLogout" type="button" hidden>登出帳號</button></div>
+        <p class="drawer-note">登入後，對局戰績將隨帳號保存。</p>
+      </div>
+    </section>
+  </main>
   <div class="modal hidden" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle">
     <div class="history-card">
       <div class="history-head"><h2 id="historyTitle">歷史戰績</h2><button id="closeHistory" type="button">返回</button></div>
@@ -464,9 +566,9 @@
     let SIZE=40;
     const COLORS=['#72e6bf','#f48770'];
     const terrainAtlas=new Image(),buildingAtlas=new Image(),unitAtlas=new Image();
-    terrainAtlas.src='/assets/terrain-16bit.png';
-    buildingAtlas.src='/assets/buildings-16bit.png';
-    unitAtlas.src='/assets/units-16bit.png';
+    terrainAtlas.src='assets/terrain-16bit.png';
+    buildingAtlas.src='assets/buildings-16bit.png';
+    unitAtlas.src='assets/units-16bit.png';
     const UNIT_ROWS={villager:0,sword:1,archer:2,pike:3,siege:4};
     const BUILDING_SPRITES={base:0,barracks:1,tower:2,farm:3,gather:4};
     const WALK_FRAMES=[2,0,3,0],CART_FRAMES=[2,3,2,3],STRIDE=.7;
@@ -523,6 +625,7 @@
       sessionStorage.removeItem('frontierToken');
     }
     function connect(){
+      if(location.protocol==='file:')return;
       const protocol=location.protocol==='https:'?'wss:':'ws:';
       try{ws=new WebSocket(`${protocol}//${location.host||'localhost:8080'}`)}
       catch{setLobbyStatus('無法建立連線，正在自動重試。');scheduleReconnect();return}
@@ -669,9 +772,9 @@
     const gameMenu=$('gameMenu'),battleLog=$('battleLog'),recruitMenu=$('recruitMenu'),guide=$('guideModal');
     function closeGuide(){
       guide.classList.add('hidden');
-      $('lobbyPage').inert=false;
-      $('game').inert=!state||!!state.ended;
-      if(!$('lobbyPage').hidden)$('lobbyGuide').focus();
+      lockForAccountModal();
+      if(!$('accountModal').classList.contains('hidden'))$('entryAccount').focus();
+      else if(!$('lobbyPage').hidden)$('lobbyGuide').focus();
       else if(!$('game').inert)gameMenu.querySelector('summary').focus();
     }
     function openGuide(){
@@ -679,6 +782,7 @@
       clearBuildingTip();
       $('lobbyPage').inert=true;
       $('game').inert=true;
+      $('accountModal').inert=true;
       keys.clear();
       guide.classList.remove('hidden');
       $('closeGuide').focus();
@@ -1483,6 +1587,7 @@
       if(drag?.select&&drag.moved){const r=canvas.getBoundingClientRect(),x1=drag.x-r.left,y1=drag.y-r.top,x2=(drag.currentX||drag.x)-r.left,y2=(drag.currentY||drag.y)-r.top;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.strokeStyle='#fff0a5';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.strokeRect(Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1));ctx.setLineDash([])}drawMinimap()
     }
     let currentAccount=null,registerMode=false,authBusy=false,historyRequest=0;
+    let accountReady=false,hasEntered=false,editingAccount=false;
     let accountReturnFocus=null,historyReturnFocus=null;
     async function accountApi(path,body){
       const response=await fetch(path,{
@@ -1498,21 +1603,65 @@
       $('lobbyPage').inert=modalOpen||!guide.classList.contains('hidden');
       $('game').inert=modalOpen||!state||!!state.ended||!guide.classList.contains('hidden');
       $('result').inert=modalOpen;
+      $('accountModal').inert=!$('historyModal').classList.contains('hidden')||!guide.classList.contains('hidden');
+      const drawerOpen=!$('entryDrawer').hidden;
+      for(const selector of ['.entry-header','.entry-layout','.entry-footer'])document.querySelector(selector).inert=drawerOpen;
       keys.clear();
     }
-    function showAccount(){
+    function showAccount(openDrawer=true){
       accountReturnFocus=document.activeElement;
+      editingAccount=false;
+      $('entryDrawer').setAttribute('aria-labelledby','accountTitle');
+      refreshAccountEntry();
       $('accountModal').classList.remove('hidden');
+      $('entryDrawer').hidden=!openDrawer;
       lockForAccountModal();
-      $('accountUsername').focus();
+      (openDrawer?(currentAccount?$('accountSubmit'):$('accountUsername')):$('titleStart')).focus();
     }
     function closeAccount(){
       if(authBusy)return;
-      $('accountModal').classList.add('hidden');
+      if(currentAccount&&editingAccount){editingAccount=false;refreshAccountEntry();$('accountSubmit').focus();return;}
+      if(hasEntered){enterLobby();return;}
+      $('entryDrawer').hidden=true;
       $('accountPassword').value='';
-      sessionStorage.setItem('windwardVisited','true');
+      lockForAccountModal();$('titleStart').focus();
+    }
+    function enterLobby(){
+      if(!accountReady||authBusy)return;
+      $('accountModal').classList.add('hidden');
+      $('entryDrawer').hidden=true;
+      $('accountPassword').value='';
+      if(!hasEntered){hasEntered=true;$('lobbyPage').hidden=false;connect();}
       lockForAccountModal();
-      if(accountReturnFocus?.isConnected)accountReturnFocus.focus();
+      if(state&&!$('game').hidden)(state.ended?$('resultAgain'):canvas).focus();
+      else if(accountReturnFocus?.isConnected&&!accountReturnFocus.closest('#accountModal'))accountReturnFocus.focus();
+      else $('lobbyTitle').focus();
+    }
+    function refreshAccountEntry(){
+      const member=!!currentAccount&&!editingAccount;
+      $('accountModal').dataset.account=member?'member':'guest';
+      $('entryCredentials').hidden=member;
+      $('entryIdentity').hidden=!member;
+      $('guestPlay').hidden=!!currentAccount;
+      $('guestPlay').disabled=!accountReady;
+      $('entryLogout').hidden=!currentAccount;
+      $('closeAccount').hidden=!(hasEntered||currentAccount&&editingAccount);
+      setText('closeAccount',editingAccount?'取消切換':'返回大廳');
+      $('accountSubmit').type=member?'button':'submit';
+      $('accountSubmit').disabled=!accountReady||authBusy;
+      $('titleStart').disabled=!accountReady;
+      setText('entryHeaderAccount',currentAccount?currentAccount.name+' · 已登入':'尚未登入');
+      setText('lobbyCommander',currentAccount?currentAccount.name:'群島指揮官');
+      setText('accountTitle',member?'歡迎回到群島':registerMode?'建立指揮官帳號':'指揮官登入');
+      setText('entryButtonText',member?'進入遊戲':registerMode?'建立並啟航':'登入遊戲');
+      setText('accountButton',currentAccount?currentAccount.name:'登入／註冊');
+      $('logoutButton').hidden=!currentAccount;
+      if(currentAccount){
+        setText('entryDisplayName',currentAccount.name);
+        setText('entryUsername','@'+currentAccount.username);
+        $('nameInput').value=currentAccount.name;
+        $('nameInput').readOnly=true;
+      }
     }
     function selectAccountTab(register){
       registerMode=register;
@@ -1521,16 +1670,21 @@
       $('registerNameField').hidden=!register;
       $('accountPassword').autocomplete=register?'new-password':'current-password';
       setText('accountTitle',register?'建立指揮官帳號':'指揮官登入');
-      setText('accountSubmit',register?'建立並登入':'登入');
+      setText('entryButtonText',register?'建立並啟航':'登入遊戲');
       setText('accountStatus','');
     }
     $('loginTab').onclick=()=>selectAccountTab(false);
     $('registerTab').onclick=()=>selectAccountTab(true);
-    $('accountButton').onclick=()=>{
-      if(currentAccount)showHistory();
-      else showAccount();
+    $('accountButton').onclick=()=>showAccount();
+    $('entryAccount').onclick=()=>showAccount();
+    $('entryDrawerClose').onclick=closeAccount;
+    $('titleStart').onclick=()=>{if(currentAccount)enterLobby();else showAccount();};
+    $('accountSubmit').onclick=event=>{if(currentAccount&&!editingAccount){event.preventDefault();enterLobby();}};
+    $('entryChange').onclick=()=>{
+      editingAccount=true;selectAccountTab(false);refreshAccountEntry();
+      $('accountUsername').value=currentAccount.username;$('accountPassword').value='';$('accountUsername').focus();
     };
-    $('guestPlay').onclick=closeAccount;
+    $('guestPlay').onclick=enterLobby;
     $('closeAccount').onclick=closeAccount;
     $('accountForm').onsubmit=async event=>{
       event.preventDefault();
@@ -1543,7 +1697,8 @@
           username:$('accountUsername').value,password:$('accountPassword').value,name:$('accountName').value
         });
         clearSavedRoom();
-        sessionStorage.setItem('windwardVisited','true');
+        localStorage.setItem('windwardLastAccount',$('accountUsername').value.trim());
+        sessionStorage.setItem('windwardEnterAfterAuth','true');
         location.reload();
       }catch(error){
         setText('accountStatus',error.name==='TimeoutError'?'登入連線逾時，請重試。':error.message);
@@ -1553,14 +1708,18 @@
         $('accountPassword').value='';
       }
     };
-    $('logoutButton').onclick=async()=>{
+    async function logoutAccount(){
       $('logoutButton').disabled=true;
+      $('entryLogout').disabled=true;
       try{
         await accountApi('/api/logout',{});
         clearSavedRoom();
+        sessionStorage.removeItem('windwardEnterAfterAuth');
         location.reload();
-      }catch(error){showToast(error.message);$('logoutButton').disabled=false;}
-    };
+      }catch(error){showToast(error.message);$('logoutButton').disabled=false;$('entryLogout').disabled=false;}
+    }
+    $('logoutButton').onclick=logoutAccount;
+    $('entryLogout').onclick=logoutAccount;
     async function loadHistory(){
       const request=++historyRequest;
       setText('historyStatus','正在讀取戰績…');
@@ -1626,11 +1785,12 @@
       $(id).addEventListener('click',event=>{if(event.target===$(id))close();});
     }
     document.addEventListener('keydown',event=>{
-      const modal=!$('accountModal').classList.contains('hidden')?$('accountModal'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
+      if(!guide.classList.contains('hidden'))return;
+      const modal=!$('accountModal').classList.contains('hidden')&&!$('entryDrawer').hidden?$('entryDrawer'):!$('historyModal').classList.contains('hidden')?$('historyModal'):null;
       if(!modal)return;
       if(event.key==='Escape'){
         event.preventDefault();event.stopImmediatePropagation();
-        if(modal.id==='accountModal')closeAccount();else closeHistory();
+        if(modal.id==='entryDrawer')closeAccount();else closeHistory();
       }
       if(event.key==='Tab'){
         const focusable=[...modal.querySelectorAll('button,input')].filter(node=>!node.disabled&&node.getClientRects().length);
@@ -1646,20 +1806,32 @@
       $('resultSparks').appendChild(spark);
     }
     async function bootAccount(){
+      if(location.protocol==='file:'){
+        accountReady=true;
+        showAccount(false);
+        const openWebsite=()=>location.assign('https://pixel-frontier-rts.onrender.com/');
+        $('titleStart').onclick=openWebsite;
+        $('entryAccount').onclick=openWebsite;
+        $('titleStart').querySelector('strong').textContent='前往線上遊戲';
+        $('titleStart').querySelector('small').textContent='OPEN ONLINE GAME';
+        setText('entryHeaderAccount','線上登入');
+        setText('entryConnection','本機檔案預覽 · 登入與對戰請前往正式網站');
+        document.querySelector('.title-tagline').textContent='目前是本機預覽，點擊下方即可前往線上遊戲。';
+        return;
+      }
+      $('accountUsername').value=localStorage.getItem('windwardLastAccount')||'';
+      setText('accountStatus','正在確認帳號狀態…');
       try{
         const data=await accountApi('/api/account');
         currentAccount=data.user;
-        if(currentAccount){
-          setText('accountButton',currentAccount.name);
-          $('logoutButton').hidden=false;
-          $('nameInput').value=currentAccount.name;
-          $('nameInput').readOnly=true;
-        }else if(!sessionStorage.getItem('windwardVisited')){
-          showAccount();
-          if(!data.available)setText('accountStatus','帳號資料庫正在準備，可先以訪客遊玩。');
-        }
-      }catch{showToast('帳號服務暫時無法連線，可先以訪客遊玩。');}
-      connect();
+        setText('accountStatus',data.available?'': '帳號服務正在準備，可先以訪客進入。');
+        setText('entryConnection',data.available?'雲端連線已就緒':'可使用訪客模式');
+      }catch{setText('accountStatus','帳號服務暫時無法連線，可先以訪客進入。');setText('entryConnection','可使用訪客模式');}
+      accountReady=true;
+      showAccount(false);
+      const enterAfterAuth=sessionStorage.getItem('windwardEnterAfterAuth');
+      sessionStorage.removeItem('windwardEnterAfterAuth');
+      if(enterAfterAuth&&currentAccount)enterLobby();
     }
     setupBuildActions();resize();bootAccount();requestAnimationFrame(loop);
   })();
